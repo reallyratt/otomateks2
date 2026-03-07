@@ -1,0 +1,5 @@
+{
+  "name": "PPTX Generator",
+  "description": "Generates a PowerPoint file based on a predefined template configuration and user-provided long text, dynamically chunking the text into multiple slides.",
+  "requestFramePermissions": []
+}
