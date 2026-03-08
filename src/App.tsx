@@ -3,50 +3,112 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
-import { FileUp, FileDown, Settings, ChevronRight, ChevronLeft, Check } from 'lucide-react';
-import { extractTemplateLayout, generateFromTemplate, PptxSection } from './services/templateService';
+import React, { useState, useEffect } from 'react';
+import { FileUp, FileDown, Settings, ChevronRight, ChevronLeft, Check, Plus, Trash2 } from 'lucide-react';
+import { extractTemplateLayout, generateFromTemplate } from './services/templateService';
+import { chunkText } from './utils/chunkText';
+
+const getAutoText = (type: string, lang: string) => {
+  if (type === 'amin') return "\n\nU: Amin";
+  if (type === 'bacaan1') return lang === 'bahasa jawa' ? "\n\nMakaten sabda Dalem Gusti...\nU: Sembah nuwun konjuk ing Gusti" : "\n\nDemikianlah sabda Tuhan...\nU: Syukur kepada Allah";
+  if (type === 'injil') return lang === 'bahasa jawa' ? "\n\nMangkono sabda Dalem Gusti...\nU: Pinujia Sang Kristus" : "\n\nDemikianlah Sabda Tuhan...\nU: Terpujilah Kristus";
+  return "";
+};
+
+const MASS_FIELDS = [
+  { id: 'laguPembuka', label: 'Lagu Pembuka', type: 'dynamic', titleCode: 'A01', textCode: 'B01', imageCode: 'C01', defaultTitle: '(umat berdiri) NYANYIAN PERARAKAN MASUK' },
+  { id: 'tuhanKasihanilah1', label: 'Tuhan Kasihanilah 1', type: 'static', titleCode: 'A02', textCode: 'B02', defaultTitle: 'TUHAN KASIHANILAH KAMI' },
+  { id: 'tuhanKasihanilah2', label: 'Tuhan Kasihanilah 2', type: 'static', titleCode: 'A03', textCode: 'B03', defaultTitle: 'TUHAN KASIHANILAH KAMI' },
+  { id: 'tuhanKasihanilah3', label: 'Tuhan Kasihanilah 3', type: 'static', titleCode: 'A04', textCode: 'B04', defaultTitle: 'TUHAN KASIHANILAH KAMI' },
+  { id: 'doaKolekta', label: 'Doa Kolekta', type: 'static', titleCode: 'A05', textCode: 'B05', defaultTitle: '(umat berdiri) DOA KOLEKTA', autoText: 'amin' },
+  { id: 'bacaan1', label: 'Bacaan 1', type: 'static', titleCode: 'A06', textCode: 'B06', defaultTitle: '(umat duduk) BACAAN I | (Sumber)', autoText: 'bacaan1' },
+  { id: 'mazmurRefren', label: 'Mazmur Tanggapan Refren', type: 'static', titleCode: 'A07', textCode: 'B07', imageCode: 'C07', defaultTitle: '(umat duduk) MAZMUR TANGGAPAN' },
+  { id: 'mazmurAyat', label: 'Mazmur Tanggapan Ayat', type: 'dynamic', titleCode: 'A08', textCode: 'B08', imageCode: 'C08', defaultTitle: '(umat duduk) MAZMUR TANGGAPAN' },
+  { id: 'bacaan2', label: 'Bacaan 2', type: 'static', titleCode: 'A011', textCode: 'B011', defaultTitle: '(umat duduk) BACAAN II | (Sumber)', autoText: 'bacaan1' },
+  { id: 'baitPengantarInjilRefren', label: 'Bait Pengantar Injil Refren', type: 'static', titleCode: 'A012', imageCode: 'C012', defaultTitle: '(umat berdiri) BAIT PENGANTAR INJIL' },
+  { id: 'baitPengantarInjilBait', label: 'Bait Pengantar Injil Bait', type: 'static', titleCode: 'A013', textCode: 'B013', imageCode: 'C013', defaultTitle: '(umat berdiri) BAIT PENGANTAR INJIL' },
+  { id: 'bacaanInjil', label: 'Bacaan Injil', type: 'static', titleCode: 'A014', textCode: 'B014', defaultTitle: '(umat berdiri) BACAAN INJIL | (Sumber)', autoText: 'injil' },
+  { id: 'doaUmatImam1', label: 'Doa Umat Imam 1', type: 'static', titleCode: 'A015', textCode: 'B015', defaultTitle: '(umat berdiri) DOA UMAT' },
+  { id: 'doaUmatLektor', label: 'Doa Umat Lektor', type: 'dynamic', titleCode: 'A016', textCode: 'B016', defaultTitle: '(umat berdiri) DOA UMAT', interleaveJawabanUmat: true },
+  { id: 'doaUmatImam2', label: 'Doa Umat Imam 2', type: 'static', titleCode: 'A026', textCode: 'B026', defaultTitle: '(umat berdiri) DOA UMAT' },
+  { id: 'doaUmatJawabanUmat', label: 'Doa Umat Jawaban Umat', type: 'static', titleCode: 'A27', textCode: 'B27', defaultTitle: '(umat berdiri) DOA UMAT' },
+  { id: 'laguPersembahan', label: 'Lagu Persembahan', type: 'dynamic', titleCode: 'A28', textCode: 'B28', imageCode: 'C28', defaultTitle: '(umat duduk) NYANYIAN PERSEMBAHAN' },
+  { id: 'doaAtasPersembahan', label: 'Doa Atas Persembahan', type: 'static', titleCode: 'A29', textCode: 'B29', defaultTitle: '(umat berdiri) DOA ATAS PERSEMBAHAN', autoText: 'amin' },
+  { id: 'laguKomuni', label: 'Lagu Komuni', type: 'dynamic', titleCode: 'A30', textCode: 'B30', imageCode: 'C30', defaultTitle: '(umat duduk) MADAH PUJIAN' },
+  { id: 'doaSesudahKomuni', label: 'Doa Sesudah Komuni', type: 'static', titleCode: 'A33', textCode: 'B33', defaultTitle: '(umat berdiri) DOA SESUDAH KOMUNI', autoText: 'amin' },
+  { id: 'laguPenutup', label: 'Lagu Penutup', type: 'dynamic', titleCode: 'A34', textCode: 'B34', imageCode: 'C34', defaultTitle: '(umat berdiri) NYANYIAN PERARAKAN KELUAR' }
+];
 
 export default function App() {
-  const [step, setStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(1);
+  
   const [templateFile, setTemplateFile] = useState<File | null>(null);
-  const [outputFileName, setOutputFileName] = useState('[Tahun A/B/C] Harian/Mingguan - Bahasa Jawa/Indonesia - Nama Minggu (27 04 2007)');
-  const [sections, setSections] = useState<PptxSection[]>([]);
-  const [enabledSections, setEnabledSections] = useState<Record<string, boolean>>({});
+  const [placeholders, setPlaceholders] = useState<string[]>([]);
   const [formData, setFormData] = useState<Record<string, string>>({});
-  const [isExtracting, setIsExtracting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isExtracting, setIsExtracting] = useState(false);
+  
+  const [language, setLanguage] = useState('bahasa indonesia');
+  const [massType, setMassType] = useState('mass');
+  const [outputFileName, setOutputFileName] = useState('');
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) setTemplateFile(file);
-  };
+  const [massDynamicFields, setMassDynamicFields] = useState<Record<string, any[]>>({
+    laguPembuka: [{ title: '(umat berdiri) NYANYIAN PERARAKAN MASUK', text: '', image: '' }],
+    mazmurAyat: [{ title: '(umat duduk) MAZMUR TANGGAPAN', text: '', image: '' }],
+    doaUmatLektor: [{ title: '(umat berdiri) DOA UMAT', text: '' }],
+    laguPersembahan: [{ title: '(umat duduk) NYANYIAN PERSEMBAHAN', text: '', image: '' }],
+    laguKomuni: [{ title: '(umat duduk) MADAH PUJIAN', text: '', image: '' }],
+    laguPenutup: [{ title: '(umat berdiri) NYANYIAN PERARAKAN KELUAR', text: '', image: '' }]
+  });
 
-  const handleNextStep1 = async () => {
-    if (!templateFile) return;
-    setIsExtracting(true);
-    try {
-      const extractedSections = await extractTemplateLayout(templateFile);
-      setSections(extractedSections);
-      
-      const initialEnabled: Record<string, boolean> = {};
-      extractedSections.forEach(sec => {
-        initialEnabled[sec.name] = true;
-      });
-      setEnabledSections(initialEnabled);
-
-      const initialData: Record<string, string> = {};
-      extractedSections.forEach(sec => {
-        sec.placeholders.forEach(p => {
-          initialData[p] = formData[p] || '';
-        });
+  useEffect(() => {
+    if (massType === 'mass') {
+      const initialData: Record<string, string> = { ...formData };
+      MASS_FIELDS.forEach(field => {
+        if (field.type === 'static') {
+          if (!initialData[field.titleCode!]) initialData[field.titleCode!] = field.defaultTitle;
+          if (field.autoText) {
+            const autoText = getAutoText(field.autoText, language);
+            // Only set if empty or if it exactly matches the previous language's auto text
+            // For simplicity, we just set it if it's empty or we can just append it if not there
+            if (!initialData[field.textCode!]) {
+              initialData[field.textCode!] = autoText.trim();
+            } else if (initialData[field.textCode!] === getAutoText(field.autoText, language === 'bahasa indonesia' ? 'bahasa jawa' : 'bahasa indonesia').trim()) {
+              initialData[field.textCode!] = autoText.trim();
+            }
+          }
+        }
       });
       setFormData(initialData);
+    }
+  }, [massType, language]);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setTemplateFile(file);
+    setOutputFileName(file.name.replace('.pptx', ''));
+    setIsExtracting(true);
+    
+    try {
+      const extractedLayouts = await extractTemplateLayout(file);
       
-      setStep(2);
+      const phs = new Set<string>();
+      extractedLayouts.forEach(l => l.placeholders.forEach((p: any) => phs.add(p.id)));
+      const extracted = Array.from(phs).sort();
+      
+      setPlaceholders(extracted);
+      
+      // Initialize form data
+      const initialData: Record<string, string> = {};
+      extracted.forEach(p => {
+        initialData[p] = '';
+      });
+      setFormData(initialData);
     } catch (error) {
-      console.error(error);
-      alert("Failed to read the PPTX template.");
+      console.error("Failed to extract placeholders:", error);
+      alert("Failed to read the PPTX template. Please ensure it is a valid file.");
     } finally {
       setIsExtracting(false);
     }
@@ -64,21 +126,60 @@ export default function App() {
     
     setIsGenerating(true);
     try {
-      const disabledSlideFiles: string[] = [];
-      const disabledSectionNames: string[] = [];
-      sections.forEach(sec => {
-        if (!enabledSections[sec.name]) {
-          disabledSlideFiles.push(...sec.slides);
-          disabledSectionNames.push(sec.name);
-        }
-      });
-
-      const blob = await generateFromTemplate(templateFile, formData, disabledSlideFiles, disabledSectionNames);
+      const finalData = { ...formData };
       
+      if (massType === 'mass') {
+        const jawabanUmat = finalData['B27'] || '';
+        
+        MASS_FIELDS.forEach(field => {
+          if (field.type === 'dynamic') {
+            const items = massDynamicFields[field.id];
+            if (items && items.length > 0) {
+              const titles: string[] = [];
+              const texts: string[] = [];
+              const images: string[] = [];
+              
+              items.forEach((item, index) => {
+                // Chunk the text for this item
+                const itemChunks = chunkText(item.text || '', 130);
+                if (itemChunks.length === 0) itemChunks.push('');
+                
+                itemChunks.forEach((chunk) => {
+                  titles.push(item.title || '');
+                  texts.push(chunk);
+                  images.push(item.image || ''); // Repeat image for chunks of the same item
+                });
+                
+                // Add the separator (empty slide or Jawaban Umat)
+                if (index < items.length - 1) {
+                  if (field.interleaveJawabanUmat) {
+                    titles.push(finalData['A27'] || '(umat berdiri) DOA UMAT');
+                    texts.push(jawabanUmat);
+                    images.push('');
+                  } else {
+                    titles.push('');
+                    texts.push('');
+                    images.push('');
+                  }
+                }
+              });
+              
+              if (field.titleCode) finalData[field.titleCode] = titles;
+              if (field.textCode) finalData[field.textCode] = texts;
+              if (field.imageCode) finalData[field.imageCode] = images;
+            }
+          }
+        });
+      }
+
+      const blob = await generateFromTemplate(templateFile, finalData);
+      
+      // Download the generated file
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = outputFileName.endsWith('.pptx') ? outputFileName : `${outputFileName}.pptx`;
+      const finalName = outputFileName.trim() ? `${outputFileName}.pptx` : `Generated_${templateFile.name}`;
+      a.download = finalName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -91,258 +192,445 @@ export default function App() {
     }
   };
 
+  const handleDynamicInputChange = (fieldId: string, index: number, key: string, value: string) => {
+    setMassDynamicFields(prev => {
+      const newItems = [...prev[fieldId]];
+      newItems[index] = { ...newItems[index], [key]: value };
+      return { ...prev, [fieldId]: newItems };
+    });
+  };
+
+  const addDynamicItem = (fieldId: string, defaultTitle: string) => {
+    setMassDynamicFields(prev => ({
+      ...prev,
+      [fieldId]: [...(prev[fieldId] || []), { title: defaultTitle, text: '', image: '' }]
+    }));
+  };
+
+  const removeDynamicItem = (fieldId: string, index: number) => {
+    setMassDynamicFields(prev => {
+      const newItems = [...prev[fieldId]];
+      newItems.splice(index, 1);
+      return { ...prev, [fieldId]: newItems };
+    });
+  };
+
+  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 4));
+  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
+
+  const steps = [
+    { id: 1, name: 'Upload PPT' },
+    { id: 2, name: 'Setup' },
+    { id: 3, name: 'Input Texts' },
+    { id: 4, name: 'Generate' }
+  ];
+
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
-      <header className="bg-white border-b border-zinc-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
-              <FileDown className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-xl font-semibold tracking-tight">Otomateks Generator</h1>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 text-sm font-medium text-zinc-500">
-            <span className={step >= 1 ? "text-indigo-600" : ""}>1. Upload</span>
-            <ChevronRight className="w-4 h-4" />
-            <span className={step >= 2 ? "text-indigo-600" : ""}>2. Sections</span>
-            <ChevronRight className="w-4 h-4" />
-            <span className={step >= 3 ? "text-indigo-600" : ""}>3. Content</span>
-            <ChevronRight className="w-4 h-4" />
-            <span className={step >= 4 ? "text-indigo-600" : ""}>4. Generate</span>
-          </div>
+    <div className="min-h-screen bg-[#faf9f8] text-[#323130] font-sans flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-4xl space-y-8">
+        <div className="text-center">
+          <h1 className="text-3xl font-semibold tracking-tight text-[#323130]">
+            PPTX Generator
+          </h1>
+          <p className="mt-2 text-base text-[#605e5c]">
+            Follow the steps to generate your presentation.
+          </p>
         </div>
-      </header>
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {step === 1 && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="text-center space-y-2">
-              <h2 className="text-3xl font-semibold tracking-tight">Upload Template</h2>
-              <p className="text-zinc-500">Start by uploading your PPTX template and setting the output file name.</p>
-            </div>
+        {/* Stepper */}
+        <nav aria-label="Progress">
+          <ol role="list" className="flex items-center justify-center space-x-4 sm:space-x-8">
+            {steps.map((step, stepIdx) => (
+              <li key={step.name} className="relative flex items-center">
+                <div className="flex items-center">
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                      currentStep > step.id
+                        ? 'bg-[#0f6cbd] text-white'
+                        : currentStep === step.id
+                        ? 'border-2 border-[#0f6cbd] text-[#0f6cbd]'
+                        : 'border-2 border-[#edebe9] text-[#605e5c]'
+                    }`}
+                  >
+                    {currentStep > step.id ? (
+                      <Check className="h-5 w-5" aria-hidden="true" />
+                    ) : (
+                      <span className="text-sm font-medium">{step.id}</span>
+                    )}
+                  </span>
+                  <span
+                    className={`ml-3 text-sm font-medium hidden sm:block ${
+                      currentStep >= step.id ? 'text-[#0f6cbd]' : 'text-[#605e5c]'
+                    }`}
+                  >
+                    {step.name}
+                  </span>
+                </div>
+                {stepIdx !== steps.length - 1 ? (
+                  <div className="hidden sm:block absolute top-4 left-full w-full -ml-2 mt-[-1px] h-0.5 bg-[#edebe9]" style={{ width: '2rem' }} />
+                ) : null}
+              </li>
+            ))}
+          </ol>
+        </nav>
 
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-zinc-200 space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-2">Output File Name</label>
-                <input
-                  type="text"
-                  value={outputFileName}
-                  onChange={(e) => setOutputFileName(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-2">PPTX Template</label>
-                <div className="relative group">
-                  <input
-                    type="file"
-                    accept=".pptx"
-                    onChange={handleFileUpload}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                  />
-                  <div className={`w-full border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 flex flex-col items-center justify-center gap-3
-                    ${templateFile ? 'border-indigo-500 bg-indigo-50/50' : 'border-zinc-300 hover:border-indigo-400 hover:bg-zinc-50'}`}>
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center ${templateFile ? 'bg-indigo-100 text-indigo-600' : 'bg-zinc-100 text-zinc-500 group-hover:bg-indigo-50 group-hover:text-indigo-500'}`}>
-                      <FileUp className="w-6 h-6" />
+        <div className="bg-white shadow-sm border border-[#edebe9] rounded-lg p-6 sm:p-8 min-h-[400px] flex flex-col">
+          <div className="flex-grow space-y-6">
+            
+            {/* Step 1: Upload PPT */}
+            {currentStep === 1 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h2 className="text-xl font-semibold text-[#323130]">Step 1: Upload PPTX Template</h2>
+                <p className="text-sm text-[#605e5c]">Select a PowerPoint file containing placeholders.</p>
+                
+                <div className="mt-4 flex justify-center rounded-lg border border-dashed border-[#8a8886] px-6 py-10 hover:bg-[#f3f2f1] transition-colors">
+                  <div className="text-center">
+                    <FileUp className="mx-auto h-12 w-12 text-[#8a8886]" aria-hidden="true" />
+                    <div className="mt-4 flex text-sm leading-6 text-[#605e5c] justify-center">
+                      <label
+                        htmlFor="file-upload"
+                        className="relative cursor-pointer rounded-md bg-transparent font-semibold text-[#0f6cbd] focus-within:outline-none focus-within:ring-2 focus-within:ring-[#0f6cbd] focus-within:ring-offset-2 hover:text-[#115ea3]"
+                      >
+                        <span>Upload a file</span>
+                        <input id="file-upload" name="file-upload" type="file" accept=".pptx" className="sr-only" onChange={handleFileUpload} />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-zinc-900">
-                        {templateFile ? templateFile.name : 'Click or drag PPTX file here'}
-                      </p>
-                      <p className="text-xs text-zinc-500 mt-1">
-                        {templateFile ? `${(templateFile.size / 1024 / 1024).toFixed(2)} MB` : 'Must contain {A01}, {B02} placeholders'}
-                      </p>
+                    <p className="text-xs leading-5 text-[#605e5c]">PPTX up to 10MB</p>
+                    {templateFile && (
+                      <div className="mt-4 p-3 bg-[#f3f2f1] rounded-md border border-[#edebe9] flex items-center justify-center gap-2">
+                        <Check className="w-4 h-4 text-[#0f6cbd]" />
+                        <span className="text-sm font-medium text-[#323130]">
+                          {templateFile.name}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {isExtracting && (
+                  <div className="text-center py-4 text-[#605e5c] flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-[#0f6cbd] border-t-transparent rounded-full animate-spin" />
+                    Extracting placeholders...
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 2: Setup */}
+            {currentStep === 2 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h2 className="text-xl font-semibold text-[#323130]">Step 2: Setup Configuration</h2>
+                <p className="text-sm text-[#605e5c]">Configure language and mass type settings.</p>
+                
+                <div className="space-y-5">
+                  <div>
+                    <label className="text-base font-medium text-[#323130]">Language</label>
+                    <p className="text-sm text-[#605e5c] mb-3">Select the language for the presentation.</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setLanguage('bahasa indonesia')}
+                        className={`p-4 rounded-lg border text-left transition-all ${
+                          language === 'bahasa indonesia' 
+                            ? 'border-[#0f6cbd] bg-[#f3f2f1] shadow-sm' 
+                            : 'border-[#edebe9] hover:border-[#8a8886] hover:bg-[#faf9f8]'
+                        }`}
+                      >
+                        <div className="font-medium text-[#323130]">Bahasa Indonesia</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLanguage('bahasa jawa')}
+                        className={`p-4 rounded-lg border text-left transition-all ${
+                          language === 'bahasa jawa' 
+                            ? 'border-[#0f6cbd] bg-[#f3f2f1] shadow-sm' 
+                            : 'border-[#edebe9] hover:border-[#8a8886] hover:bg-[#faf9f8]'
+                        }`}
+                      >
+                        <div className="font-medium text-[#323130]">Bahasa Jawa</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-[#edebe9]">
+                    <label className="text-base font-medium text-[#323130]">Mass Type</label>
+                    <p className="text-sm text-[#605e5c] mb-3">Choose how data will be populated.</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setMassType('mass')}
+                        className={`p-4 rounded-lg border text-left transition-all ${
+                          massType === 'mass' 
+                            ? 'border-[#0f6cbd] bg-[#f3f2f1] shadow-sm' 
+                            : 'border-[#edebe9] hover:border-[#8a8886] hover:bg-[#faf9f8]'
+                        }`}
+                      >
+                        <div className="font-medium text-[#323130]">Mass</div>
+                        <div className="text-sm text-[#605e5c] mt-1">Generate multiple slides from data</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMassType('custom')}
+                        className={`p-4 rounded-lg border text-left transition-all ${
+                          massType === 'custom' 
+                            ? 'border-[#0f6cbd] bg-[#f3f2f1] shadow-sm' 
+                            : 'border-[#edebe9] hover:border-[#8a8886] hover:bg-[#faf9f8]'
+                        }`}
+                      >
+                        <div className="font-medium text-[#323130]">Custom Field</div>
+                        <div className="text-sm text-[#605e5c] mt-1">Manually input specific fields</div>
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            <div className="flex justify-end">
-              <button
-                onClick={handleNextStep1}
-                disabled={!templateFile || isExtracting}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-zinc-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-medium transition-colors"
-              >
-                {isExtracting ? 'Reading Template...' : 'Next Step'}
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="text-center space-y-2">
-              <h2 className="text-3xl font-semibold tracking-tight">Select Sections</h2>
-              <p className="text-zinc-500">Toggle the sections you want to include in the generated presentation.</p>
-            </div>
-
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-zinc-200 space-y-4">
-              {sections.length === 0 ? (
-                <p className="text-center text-zinc-500 py-8">No sections detected in the template.</p>
-              ) : (
-                sections.map(sec => (
-                  <div key={sec.name} className="flex items-center justify-between p-4 border border-zinc-200 rounded-xl hover:bg-zinc-50 transition-colors">
-                    <span className="font-medium text-lg">{sec.name}</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="sr-only peer" 
-                        checked={enabledSections[sec.name]} 
-                        onChange={(e) => setEnabledSections(prev => ({...prev, [sec.name]: e.target.checked}))} 
-                      />
-                      <div className="w-11 h-6 bg-zinc-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                    </label>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="flex justify-between">
-              <button
-                onClick={() => setStep(1)}
-                className="flex items-center gap-2 bg-white border border-zinc-300 hover:bg-zinc-50 text-zinc-700 px-6 py-3 rounded-xl font-medium transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-                Back
-              </button>
-              <button
-                onClick={() => setStep(3)}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-medium transition-colors"
-              >
-                Next Step
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="text-center space-y-2">
-              <h2 className="text-3xl font-semibold tracking-tight">Fill Content</h2>
-              <p className="text-zinc-500">Enter the content for the enabled sections.</p>
-            </div>
-
-            <div className="space-y-6">
-              {sections.filter(sec => enabledSections[sec.name]).map(sec => {
-                const secPlaceholders = sec.placeholders;
-                return (
-                  <div key={sec.name} className="bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm space-y-5">
-                    <h3 className="text-xl font-semibold border-b border-zinc-100 pb-3">Section {sec.name}</h3>
-                    <div className="space-y-4">
-                      {secPlaceholders.map(ph => {
-                        const typeCode = ph.substring(1);
-                        const isTextArea = typeCode === '02';
-                        const label = typeCode === '01' ? 'Title' : typeCode === '02' ? 'Text Content' : typeCode === '03' ? 'Image URL' : 'Content';
+            {/* Step 3: Input Texts */}
+            {currentStep === 3 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h2 className="text-xl font-semibold text-[#323130]">Step 3: Input Texts</h2>
+                <p className="text-sm text-[#605e5c]">Fill in the values for the extracted placeholders.</p>
+                
+                {massType === 'mass' ? (
+                  <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                    {MASS_FIELDS.map((field) => (
+                      <div key={field.id} className="bg-white p-5 rounded-lg border border-[#edebe9] shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-lg font-medium text-[#323130]">{field.label}</h3>
+                          {field.type === 'dynamic' && (
+                            <button
+                              type="button"
+                              onClick={() => addDynamicItem(field.id, field.defaultTitle)}
+                              className="inline-flex items-center gap-1 text-sm font-medium text-[#0f6cbd] hover:text-[#115ea3]"
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add More
+                            </button>
+                          )}
+                        </div>
                         
-                        return (
-                          <div key={ph}>
-                            <label className="block text-sm font-medium text-zinc-700 mb-1.5">
-                              {`{${ph}}`} - {label}
-                            </label>
+                        {field.type === 'static' ? (
+                          <div className="space-y-4">
+                            {field.titleCode && (
+                              <div>
+                                <label className="block text-sm font-medium text-[#605e5c] mb-1">Title {`{${field.titleCode}}`}</label>
+                                <input
+                                  type="text"
+                                  className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm outline-none transition-all"
+                                  value={formData[field.titleCode] || ''}
+                                  onChange={(e) => handleInputChange(field.titleCode!, e.target.value)}
+                                />
+                              </div>
+                            )}
+                            {field.textCode && (
+                              <div>
+                                <label className="block text-sm font-medium text-[#605e5c] mb-1">Text {`{${field.textCode}}`}</label>
+                                <textarea
+                                  rows={4}
+                                  className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm resize-none outline-none transition-all"
+                                  value={formData[field.textCode] || ''}
+                                  onChange={(e) => handleInputChange(field.textCode!, e.target.value)}
+                                />
+                              </div>
+                            )}
+                            {field.imageCode && (
+                              <div>
+                                <label className="block text-sm font-medium text-[#605e5c] mb-1">Image URL {`{${field.imageCode}}`}</label>
+                                <input
+                                  type="text"
+                                  className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm outline-none transition-all"
+                                  value={formData[field.imageCode] || ''}
+                                  onChange={(e) => handleInputChange(field.imageCode!, e.target.value)}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="space-y-6">
+                            {massDynamicFields[field.id]?.map((item, index) => (
+                              <div key={index} className="relative pl-4 border-l-2 border-[#0f6cbd] space-y-4">
+                                {index > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => removeDynamicItem(field.id, index)}
+                                    className="absolute -top-2 -right-2 p-1.5 text-[#605e5c] hover:text-[#d13438] hover:bg-[#fde7e9] rounded-md transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                )}
+                                {field.titleCode && (
+                                  <div>
+                                    <label className="block text-sm font-medium text-[#605e5c] mb-1">Title {`{${field.titleCode}}`}</label>
+                                    <input
+                                      type="text"
+                                      className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm outline-none transition-all"
+                                      value={item.title || ''}
+                                      onChange={(e) => handleDynamicInputChange(field.id, index, 'title', e.target.value)}
+                                    />
+                                  </div>
+                                )}
+                                {field.textCode && (
+                                  <div>
+                                    <label className="block text-sm font-medium text-[#605e5c] mb-1">Text {`{${field.textCode}}`}</label>
+                                    <textarea
+                                      rows={4}
+                                      className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm resize-none outline-none transition-all"
+                                      value={item.text || ''}
+                                      onChange={(e) => handleDynamicInputChange(field.id, index, 'text', e.target.value)}
+                                    />
+                                  </div>
+                                )}
+                                {field.imageCode && (
+                                  <div>
+                                    <label className="block text-sm font-medium text-[#605e5c] mb-1">Image URL {`{${field.imageCode}}`}</label>
+                                    <input
+                                      type="text"
+                                      className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm outline-none transition-all"
+                                      value={item.image || ''}
+                                      onChange={(e) => handleDynamicInputChange(field.id, index, 'image', e.target.value)}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : placeholders.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                    {placeholders.map((placeholder) => {
+                      const typeCode = placeholder.substring(1);
+                      const isTextArea = typeCode === '02';
+                      
+                      return (
+                        <div key={placeholder} className={isTextArea ? "sm:col-span-2" : ""}>
+                          <label htmlFor={placeholder} className="block text-sm font-medium text-[#605e5c] mb-1">
+                            {`{${placeholder}}`} - {
+                              typeCode === '01' ? 'Title' :
+                              typeCode === '02' ? 'Text Content' :
+                              typeCode === '03' ? 'Image URL' : 'Content'
+                            }
+                          </label>
+                          <div className="mt-1">
                             {isTextArea ? (
                               <textarea
-                                value={formData[ph] || ''}
-                                onChange={(e) => handleInputChange(ph, e.target.value)}
+                                id={placeholder}
                                 rows={4}
-                                className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none resize-y"
-                                placeholder={`Enter ${label.toLowerCase()}...`}
+                                className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm resize-none outline-none transition-all"
+                                value={formData[placeholder] || ''}
+                                onChange={(e) => handleInputChange(placeholder, e.target.value)}
+                                placeholder={`Enter text for {${placeholder}}...`}
                               />
                             ) : (
                               <input
                                 type="text"
-                                value={formData[ph] || ''}
-                                onChange={(e) => handleInputChange(ph, e.target.value)}
-                                className="w-full px-4 py-2.5 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all outline-none"
-                                placeholder={`Enter ${label.toLowerCase()}...`}
+                                id={placeholder}
+                                className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm outline-none transition-all"
+                                value={formData[placeholder] || ''}
+                                onChange={(e) => handleInputChange(placeholder, e.target.value)}
+                                placeholder={`Enter value for {${placeholder}}...`}
                               />
                             )}
                           </div>
-                        );
-                      })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-[#faf9f8] rounded-lg border border-[#edebe9]">
+                    <p className="text-[#605e5c]">No placeholders found in the uploaded template.</p>
+                    <p className="text-sm text-[#8a8886] mt-1">Ensure your PPTX has text like {'{A01}'}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 4: Generate */}
+            {currentStep === 4 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <h2 className="text-xl font-semibold text-[#323130]">Step 4: Generate PPTX</h2>
+                <p className="text-sm text-[#605e5c]">Set the file name and download your presentation.</p>
+                
+                <div className="space-y-4 max-w-md">
+                  <div>
+                    <label htmlFor="filename" className="block text-sm font-medium text-[#605e5c] mb-1">
+                      Output File Name
+                    </label>
+                    <div className="mt-1 flex rounded-md shadow-sm">
+                      <input
+                        type="text"
+                        name="filename"
+                        id="filename"
+                        className="block w-full min-w-0 flex-1 rounded-none rounded-l-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm outline-none transition-all"
+                        placeholder="My_Presentation"
+                        value={outputFileName}
+                        onChange={(e) => setOutputFileName(e.target.value)}
+                      />
+                      <span className="inline-flex items-center rounded-r-md border border-l-0 border-[#8a8886] bg-[#f3f2f1] px-3 text-[#605e5c] sm:text-sm">
+                        .pptx
+                      </span>
                     </div>
                   </div>
-                );
-              })}
-              
-              {sections.filter(sec => enabledSections[sec.name]).length === 0 && (
-                <div className="bg-white p-8 rounded-2xl shadow-sm border border-zinc-200 text-center">
-                  <p className="text-zinc-500">No sections enabled. Please go back and enable at least one section.</p>
+
+                  <div className="bg-[#faf9f8] p-4 rounded-lg border border-[#edebe9] mt-6 space-y-2">
+                    <h4 className="text-sm font-medium text-[#323130]">Summary</h4>
+                    <ul className="text-sm text-[#605e5c] space-y-1">
+                      <li>• Template: <span className="font-medium text-[#323130]">{templateFile?.name || 'None'}</span></li>
+                      <li>• Language: <span className="font-medium text-[#323130] capitalize">{language}</span></li>
+                      <li>• Mass Type: <span className="font-medium text-[#323130] capitalize">{massType}</span></li>
+                      <li>• Placeholders Filled: <span className="font-medium text-[#323130]">{Object.values(formData).filter(v => v.trim() !== '').length} / {placeholders.length}</span></li>
+                    </ul>
+                  </div>
                 </div>
-              )}
-            </div>
-
-            <div className="flex justify-between">
-              <button
-                onClick={() => setStep(2)}
-                className="flex items-center gap-2 bg-white border border-zinc-300 hover:bg-zinc-50 text-zinc-700 px-6 py-3 rounded-xl font-medium transition-colors"
-              >
-                <ChevronLeft className="w-5 h-5" />
-                Back
-              </button>
-              <button
-                onClick={() => setStep(4)}
-                disabled={sections.filter(sec => enabledSections[sec.name]).length === 0}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-zinc-300 disabled:cursor-not-allowed text-white px-6 py-3 rounded-xl font-medium transition-colors"
-              >
-                Next Step
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
+              </div>
+            )}
           </div>
-        )}
 
-        {step === 4 && (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="text-center space-y-6 py-12">
-              <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto shadow-sm">
-                <Check className="w-10 h-10" />
-              </div>
-              <div className="space-y-2">
-                <h2 className="text-3xl font-semibold tracking-tight">Ready to Generate</h2>
-                <p className="text-zinc-500 max-w-md mx-auto">
-                  Your presentation is ready. Click the button below to generate and download the file.
-                </p>
-              </div>
-              
-              <div className="bg-white border border-zinc-200 rounded-xl p-4 inline-block text-left min-w-[300px]">
-                <p className="text-sm text-zinc-500 mb-1">Output File:</p>
-                <p className="font-medium">{outputFileName.endsWith('.pptx') ? outputFileName : `${outputFileName}.pptx`}</p>
-              </div>
-            </div>
-
-            <div className="flex justify-between">
+          {/* Navigation Buttons */}
+          <div className="pt-6 mt-6 flex items-center justify-between border-t border-[#edebe9]">
+            <button
+              onClick={prevStep}
+              disabled={currentStep === 1}
+              className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#323130] border border-[#8a8886] hover:bg-[#f3f2f1] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back
+            </button>
+            
+            {currentStep < 4 ? (
               <button
-                onClick={() => setStep(3)}
-                className="flex items-center gap-2 bg-white border border-zinc-300 hover:bg-zinc-50 text-zinc-700 px-6 py-3 rounded-xl font-medium transition-colors"
+                onClick={nextStep}
+                disabled={(currentStep === 1 && (!templateFile || isExtracting))}
+                className="inline-flex items-center gap-2 rounded-md bg-[#0f6cbd] px-6 py-2 text-sm font-semibold text-white hover:bg-[#115ea3] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
-                <ChevronLeft className="w-5 h-5" />
-                Back
+                Next
+                <ChevronRight className="w-4 h-4" />
               </button>
+            ) : (
               <button
                 onClick={handleGenerate}
-                disabled={isGenerating}
-                className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white px-8 py-3 rounded-xl font-medium transition-colors shadow-sm"
+                disabled={!templateFile || isGenerating}
+                className="inline-flex items-center gap-2 rounded-md bg-[#0f6cbd] px-6 py-2 text-sm font-semibold text-white hover:bg-[#115ea3] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {isGenerating ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     Generating...
                   </>
                 ) : (
                   <>
-                    <FileDown className="w-5 h-5" />
+                    <FileDown className="w-4 h-4" />
                     Generate PPTX
                   </>
                 )}
               </button>
-            </div>
+            )}
           </div>
-        )}
-      </main>
+        </div>
+      </div>
     </div>
   );
 }

@@ -3,149 +3,28 @@ import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { chunkText } from '../utils/chunkText';
 
-export interface PptxSection {
-  name: string;
-  slides: string[];
-  placeholders: string[];
-}
-
-export async function extractTemplateLayout(file: File): Promise<PptxSection[]> {
+export async function extractTemplateLayout(file: File): Promise<any[]> {
   const arrayBuffer = await file.arrayBuffer();
   const zip = new PizZip(new Uint8Array(arrayBuffer));
   
-  // 1. Map rId to slide filename
-  const relsXml = zip.file('ppt/_rels/presentation.xml.rels')?.asText() || '';
-  const rIdToSlide = new Map<string, string>();
-  const relRegex = /<Relationship[^>]+Id="([^"]+)"[^>]+Target="([^"]+)"/g;
-  let relMatch;
-  while ((relMatch = relRegex.exec(relsXml)) !== null) {
-    const rId = relMatch[1];
-    let target = relMatch[2];
-    if (target.startsWith('slides/')) {
-      target = 'ppt/' + target;
-    } else if (target.startsWith('/ppt/slides/')) {
-      target = target.substring(1);
-    }
-    rIdToSlide.set(rId, target);
-  }
-
-  // 2. Map sldId to rId
-  const presXml = zip.file('ppt/presentation.xml')?.asText() || '';
-  const sldIdToSlide = new Map<string, string>();
-  const sldRegex = /<p:sldId id="(\d+)" r:id="([^"]+)"/g;
-  let sldMatch;
-  while ((sldMatch = sldRegex.exec(presXml)) !== null) {
-    const sldId = sldMatch[1];
-    const rId = sldMatch[2];
-    const slideFile = rIdToSlide.get(rId);
-    if (slideFile) {
-      sldIdToSlide.set(sldId, slideFile);
-    }
-  }
-
-  // 3. Extract sections
-  const sections: PptxSection[] = [];
-  const sectionLstMatch = presXml.match(/<p14:sectionLst[^>]*>([\s\S]*?)<\/p14:sectionLst>/);
+  const placeholders = new Set<string>();
   
-  const assignedSlides = new Set<string>();
-
-  if (sectionLstMatch) {
-    const sectionLstXml = sectionLstMatch[1];
-    const sectionRegex = /<p14:section name="([^"]+)"[^>]*>([\s\S]*?)<\/p14:section>/g;
-    let secMatch;
-    while ((secMatch = sectionRegex.exec(sectionLstXml)) !== null) {
-      const secName = secMatch[1];
-      const sldIdLstXml = secMatch[2];
-      const slides: string[] = [];
-      
-      const sldIdRegex = /<p14:sldId id="(\d+)"/g;
-      let idMatch;
-      while ((idMatch = sldIdRegex.exec(sldIdLstXml)) !== null) {
-        const sldId = idMatch[1];
-        const slideFile = sldIdToSlide.get(sldId);
-        if (slideFile) {
-          slides.push(slideFile);
-          assignedSlides.add(slideFile);
-        }
-      }
-      
-      sections.push({ name: secName, slides, placeholders: [] });
-    }
-  }
-
-  // Find slides not in any section (or if no sections exist)
-  const unassignedSlides: string[] = [];
-  for (const slideFile of sldIdToSlide.values()) {
-    if (!assignedSlides.has(slideFile)) {
-      unassignedSlides.push(slideFile);
-    }
-  }
-
-  if (unassignedSlides.length > 0) {
-    if (sections.length === 0) {
-      sections.push({ name: "Main Presentation", slides: unassignedSlides, placeholders: [] });
-    } else {
-      sections.unshift({ name: "Default Section", slides: unassignedSlides, placeholders: [] });
-    }
-  }
-
-  // 4. Extract placeholders for each slide and assign to sections
-  for (const section of sections) {
-    const phs = new Set<string>();
-    for (const slideFile of section.slides) {
-      const xml = zip.file(slideFile)?.asText() || '';
+  for (const [filename, fileData] of Object.entries(zip.files)) {
+    if (filename.startsWith('ppt/slides/slide') && filename.endsWith('.xml')) {
+      const xml = (fileData as any).asText();
       const rawText = xml.replace(/<[^>]+>/g, '');
       const regex = /\{([A-Z]\d{2})\}/g;
       let match;
       while ((match = regex.exec(rawText)) !== null) {
-        phs.add(match[1]);
+        placeholders.add(match[1]);
       }
     }
-    section.placeholders = Array.from(phs).sort();
   }
-
-  return sections;
-}
-
-function deleteSlide(zip: any, slideFileName: string) {
-  const origSlideNumMatch = slideFileName.match(/slide(\d+)\.xml/);
-  if (!origSlideNumMatch) return;
-  const slideNum = origSlideNumMatch[1];
-
-  zip.remove(slideFileName);
-  zip.remove(`ppt/slides/_rels/slide${slideNum}.xml.rels`);
-
-  let contentTypes = zip.file('[Content_Types].xml')?.asText() || '';
-  const ctRegex = new RegExp(`<Override PartName="/${slideFileName.replace(/\//g, '\\/')}"[^>]*/>`, 'g');
-  contentTypes = contentTypes.replace(ctRegex, '');
-  zip.file('[Content_Types].xml', contentTypes);
-
-  let presRelsXml = zip.file('ppt/_rels/presentation.xml.rels')?.asText() || '';
-  const relRegex = new RegExp(`<Relationship Id="([^"]+)"[^>]+Target="[^"]*slide${slideNum}\\.xml"[^>]*/>`);
-  const relMatch = relRegex.exec(presRelsXml);
-  let rId = '';
-  if (relMatch) {
-    rId = relMatch[1];
-    presRelsXml = presRelsXml.replace(relMatch[0], '');
-    zip.file('ppt/_rels/presentation.xml.rels', presRelsXml);
-  }
-
-  if (rId) {
-    let presXml = zip.file('ppt/presentation.xml')?.asText() || '';
-    
-    const sldIdMatch = new RegExp(`<p:sldId id="(\\d+)" r:id="${rId}"\\s*/>`).exec(presXml);
-    const sldId = sldIdMatch ? sldIdMatch[1] : null;
-
-    const sldIdRegex = new RegExp(`<p:sldId id="\\d+" r:id="${rId}"\\s*/>`);
-    presXml = presXml.replace(sldIdRegex, '');
-
-    if (sldId) {
-      const p14SldIdRegex = new RegExp(`<p14:sldId id="${sldId}"\\s*/>`, 'g');
-      presXml = presXml.replace(p14SldIdRegex, '');
-    }
-
-    zip.file('ppt/presentation.xml', presXml);
-  }
+  
+  return [{
+    slideIndex: 1,
+    placeholders: Array.from(placeholders).map(id => ({ id }))
+  }];
 }
 
 function duplicateSlide(zip: any, slideFileName: string, numCopies: number): string[] {
@@ -173,6 +52,8 @@ function duplicateSlide(zip: any, slideFileName: string, numCopies: number): str
   }
 
   // 3. Find max sldId in presentation.xml
+  // CRITICAL FIX: Only match <p:sldId id="..."> to avoid matching <p:sldMasterId id="2147483648">
+  // PowerPoint crashes if sldId >= 2147483648
   let presXml = zip.file('ppt/presentation.xml')?.asText() || '';
   let maxSldId = 255;
   let sldMatch;
@@ -182,20 +63,11 @@ function duplicateSlide(zip: any, slideFileName: string, numCopies: number): str
     maxSldId = Math.max(maxSldId, val);
   }
 
-  // Find original rId and sldId
+  // Find original rId
   const origRelMatch = new RegExp(`<Relationship[^>]+Id="([^"]+)"[^>]+Target="[^"]*slide${origSlideNum}\\.xml"`).exec(presRelsXml);
   const origRId = origRelMatch ? origRelMatch[1] : '';
 
-  let origSldId = '';
-  if (origRId) {
-    const sldMatch2 = new RegExp(`<p:sldId id="(\\d+)" r:id="${origRId}"`).exec(presXml);
-    if (sldMatch2) {
-      origSldId = sldMatch2[1];
-    }
-  }
-
   let currentRIdToInsertAfter = origRId;
-  let currentP14SldIdToInsertAfter = origSldId;
 
   for (let i = 0; i < numCopies; i++) {
     maxSlideNum++;
@@ -214,6 +86,8 @@ function duplicateSlide(zip: any, slideFileName: string, numCopies: number): str
     const origRelName = `ppt/slides/_rels/slide${origSlideNum}.xml.rels`;
     const origRelXml = zip.file(origRelName)?.asText();
     if (origRelXml) {
+      // CRITICAL FIX: Remove notesSlide relationships. Multiple slides cannot share the same notes slide.
+      // This is a primary cause of the "Repair" prompt in PowerPoint.
       const newRelXml = origRelXml.replace(/<Relationship[^>]+Type="[^"]*notesSlide"[^>]+\/?>/g, '');
       zip.file(newRelName, newRelXml);
     }
@@ -252,27 +126,60 @@ function duplicateSlide(zip: any, slideFileName: string, numCopies: number): str
     } else {
       presXml = presXml.replace('</p:sldIdLst>', `${newSldStr}</p:sldIdLst>`);
     }
-
-    if (currentP14SldIdToInsertAfter) {
-      const searchStrP14 = `<p14:sldId id="${currentP14SldIdToInsertAfter}"`;
-      const idxP14 = presXml.indexOf(searchStrP14);
-      if (idxP14 !== -1) {
-        const closeIdxP14 = presXml.indexOf('/>', idxP14);
-        if (closeIdxP14 !== -1) {
-          const insertPosP14 = closeIdxP14 + 2;
-          const newP14SldStr = `<p14:sldId id="${maxSldId}"/>`;
-          presXml = presXml.substring(0, insertPosP14) + newP14SldStr + presXml.substring(insertPosP14);
-        }
-      }
-    }
-
     zip.file('ppt/presentation.xml', presXml);
 
     currentRIdToInsertAfter = `rId${maxRelId}`;
-    currentP14SldIdToInsertAfter = maxSldId.toString();
+  }
+
+  // CRITICAL FIX: Update docProps/app.xml to prevent "Repair" prompt
+  // PowerPoint checks if the <Slides> count matches the <TitlesOfParts> vector size.
+  let appXml = zip.file('docProps/app.xml')?.asText();
+  if (appXml) {
+    // Remove HeadingPairs and TitlesOfParts so PowerPoint regenerates them cleanly
+    appXml = appXml.replace(/<HeadingPairs>[\s\S]*?<\/HeadingPairs>/g, '');
+    appXml = appXml.replace(/<TitlesOfParts>[\s\S]*?<\/TitlesOfParts>/g, '');
+    
+    // Update the total slide count
+    const slidesMatch = appXml.match(/<Slides>(\d+)<\/Slides>/);
+    if (slidesMatch) {
+      const currentSlides = parseInt(slidesMatch[1], 10);
+      appXml = appXml.replace(`<Slides>${currentSlides}</Slides>`, `<Slides>${currentSlides + numCopies}</Slides>`);
+    }
+    zip.file('docProps/app.xml', appXml);
   }
 
   return newSlideNames;
+}
+
+function removeShapeWithText(xml: string, text: string): string {
+  let idx = xml.indexOf(text);
+  while (idx !== -1) {
+    // Find the closest preceding <p:sp>, <p:pic>, or <p:graphicFrame>
+    const tags = ['<p:sp>', '<p:sp ', '<p:pic>', '<p:pic ', '<p:graphicFrame>', '<p:graphicFrame '];
+    let start = -1;
+    let endTag = '';
+    
+    for (const tag of tags) {
+      const tagIdx = xml.lastIndexOf(tag, idx);
+      if (tagIdx > start) {
+        start = tagIdx;
+        if (tag.startsWith('<p:sp')) endTag = '</p:sp>';
+        else if (tag.startsWith('<p:pic')) endTag = '</p:pic>';
+        else if (tag.startsWith('<p:graphicFrame')) endTag = '</p:graphicFrame>';
+      }
+    }
+    
+    if (start !== -1 && endTag) {
+      const end = xml.indexOf(endTag, idx);
+      if (end !== -1) {
+        xml = xml.substring(0, start) + xml.substring(end + endTag.length);
+        idx = xml.indexOf(text);
+        continue;
+      }
+    }
+    break;
+  }
+  return xml;
 }
 
 export async function generateFromExtractedLayout(
@@ -282,7 +189,7 @@ export async function generateFromExtractedLayout(
   throw new Error("Use generateFromTemplate instead");
 }
 
-export async function generateFromTemplate(file: File, data: Record<string, string>, disabledSlideFiles: string[] = [], disabledSectionNames: string[] = []): Promise<Blob> {
+export async function generateFromTemplate(file: File, data: Record<string, any>): Promise<Blob> {
   const arrayBuffer = await file.arrayBuffer();
   const zip = new PizZip(new Uint8Array(arrayBuffer));
   
@@ -297,10 +204,9 @@ export async function generateFromTemplate(file: File, data: Record<string, stri
       xml = xml.replace(/\{\{([A-Z]\d{2})/g, '{$1');
       xml = xml.replace(/([A-Z]\d{2})\}\}/g, '$1}');
       
-      // Clean up split tags: sometimes PowerPoint splits {A01} into {</a:t><a:t>A01}</a:t>
-      // This regex removes any XML tags that are stuck exactly between the { and the A01
-      xml = xml.replace(/\{(<[^>]+>)+([A-Z]\d{2})/g, '{$2');
-      xml = xml.replace(/([A-Z]\d{2})(<[^>]+>)+\}/g, '$1}');
+      // Fix docxtemplater duplicate close tags issue where it sees "B010}}"
+      // This happens when we replace {B01} with {B01_0} and there was already a stray }
+      xml = xml.replace(/\}\}/g, '}');
       
       zip.file(filename, xml);
 
@@ -320,21 +226,17 @@ export async function generateFromTemplate(file: File, data: Record<string, stri
     }
   }
 
-  // Delete slides for disabled sections
-  for (const slideName of disabledSlideFiles) {
-    deleteSlide(zip, slideName);
-    slideToPlaceholders.delete(slideName);
-  }
-
   // Chunk the data
   const chunkedData: Record<string, string[]> = {};
   for (const [key, value] of Object.entries(data)) {
-    if (key.endsWith('02')) {
+    if (Array.isArray(value)) {
+      chunkedData[key] = value;
+    } else if (key.startsWith('B') && typeof value === 'string') {
       // Text content gets chunked
       chunkedData[key] = chunkText(value, 130);
     } else {
       // Titles and images don't get chunked
-      chunkedData[key] = [value];
+      chunkedData[key] = [String(value || '')];
     }
   }
 
@@ -365,51 +267,32 @@ export async function generateFromTemplate(file: File, data: Record<string, stri
         const regex = new RegExp(regexStr, 'g');
         
         // Rename placeholder in XML (e.g., {A01} -> {A01_0})
-        xml = xml.replace(regex, `{${ph}_${i}}`);
+        const newPh = `{${ph}_${i}}`;
+        xml = xml.replace(regex, newPh);
         
         // Populate flatData for docxtemplater
         const val = chunkedData[ph]?.[i];
+        let finalVal = "";
         if (val !== undefined) {
-          flatData[`${ph}_${i}`] = val;
+          finalVal = val;
         } else {
           // If we run out of chunks for this specific placeholder
-          if (ph.endsWith('02')) {
-            flatData[`${ph}_${i}`] = ""; // Empty text for extra slides
+          if (ph.startsWith('B')) {
+            finalVal = ""; // Empty text for extra slides
           } else {
-            flatData[`${ph}_${i}`] = chunkedData[ph]?.[0] || ""; // Repeat title/image
+            finalVal = chunkedData[ph]?.[0] || ""; // Repeat title/image
           }
+        }
+        
+        if (ph.startsWith('C') && !finalVal) {
+          // Remove the shape if it's an image placeholder and the value is empty
+          xml = removeShapeWithText(xml, newPh);
+        } else {
+          flatData[`${ph}_${i}`] = finalVal;
         }
       }
       zip.file(currentSlide, xml);
     }
-  }
-
-  // Update docProps/app.xml to prevent "Repair" prompt
-  let presXmlFinal = zip.file('ppt/presentation.xml')?.asText() || '';
-  
-  // Remove disabled sections from <p14:sectionLst>
-  if (disabledSectionNames.length > 0) {
-    for (const secName of disabledSectionNames) {
-      const escapedSecName = secName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const secRegex = new RegExp(`<p14:section name="${escapedSecName}"[^>]*>[\\s\\S]*?<\\/p14:section>`, 'g');
-      presXmlFinal = presXmlFinal.replace(secRegex, '');
-    }
-    // Clean up empty section list
-    presXmlFinal = presXmlFinal.replace(/<p14:sectionLst[^>]*>\s*<\/p14:sectionLst>/g, '');
-  }
-
-  const finalSlideCount = (presXmlFinal.match(/<p:sldId /g) || []).length;
-  zip.file('ppt/presentation.xml', presXmlFinal);
-
-  let appXml = zip.file('docProps/app.xml')?.asText();
-  if (appXml) {
-    // Remove HeadingPairs and TitlesOfParts so PowerPoint regenerates them cleanly
-    appXml = appXml.replace(/<HeadingPairs>[\s\S]*?<\/HeadingPairs>/g, '');
-    appXml = appXml.replace(/<TitlesOfParts>[\s\S]*?<\/TitlesOfParts>/g, '');
-    
-    // Update the total slide count
-    appXml = appXml.replace(/<Slides>\d+<\/Slides>/, `<Slides>${finalSlideCount}</Slides>`);
-    zip.file('docProps/app.xml', appXml);
   }
   
   const DocxtemplaterConstructor = typeof Docxtemplater === 'function' 
