@@ -16,27 +16,27 @@ const getAutoText = (type: string, lang: string) => {
 };
 
 const MASS_FIELDS = [
-  { id: 'laguPembuka', label: 'Lagu Pembuka', type: 'dynamic', titleCode: 'A01', textCode: 'B01', imageCode: 'C01', defaultTitle: '(umat berdiri) NYANYIAN PERARAKAN MASUK' },
+  { id: 'laguPembuka', label: 'Lagu Pembuka', type: 'dynamic', titleCode: 'A01', textCode: 'B01', imageCode: 'C01', defaultTitle: '(umat berdiri) NYANYIAN PERARAKAN MASUK', interleaveType: 'empty', itemLabel: 'Lagu Pembuka' },
   { id: 'tuhanKasihanilah1', label: 'Tuhan Kasihanilah 1', type: 'static', titleCode: 'A02', textCode: 'B02', defaultTitle: 'TUHAN KASIHANILAH KAMI' },
   { id: 'tuhanKasihanilah2', label: 'Tuhan Kasihanilah 2', type: 'static', titleCode: 'A03', textCode: 'B03', defaultTitle: 'TUHAN KASIHANILAH KAMI' },
   { id: 'tuhanKasihanilah3', label: 'Tuhan Kasihanilah 3', type: 'static', titleCode: 'A04', textCode: 'B04', defaultTitle: 'TUHAN KASIHANILAH KAMI' },
   { id: 'doaKolekta', label: 'Doa Kolekta', type: 'static', titleCode: 'A05', textCode: 'B05', defaultTitle: '(umat berdiri) DOA KOLEKTA', autoText: 'amin' },
   { id: 'bacaan1', label: 'Bacaan 1', type: 'static', titleCode: 'A06', textCode: 'B06', defaultTitle: '(umat duduk) BACAAN I | (Sumber)', autoText: 'bacaan1' },
   { id: 'mazmurRefren', label: 'Mazmur Tanggapan Refren', type: 'static', titleCode: 'A07', textCode: 'B07', imageCode: 'C07', defaultTitle: '(umat duduk) MAZMUR TANGGAPAN' },
-  { id: 'mazmurAyat', label: 'Mazmur Tanggapan Ayat', type: 'dynamic', titleCode: 'A08', textCode: 'B08', imageCode: 'C08', defaultTitle: '(umat duduk) MAZMUR TANGGAPAN' },
+  { id: 'mazmurAyat', label: 'Mazmur Tanggapan Ayat', type: 'dynamic', titleCode: 'A08', textCode: 'B08', imageCode: 'C08', defaultTitle: '(umat duduk) MAZMUR TANGGAPAN', interleaveType: 'refren', itemLabel: 'Ayat' },
   { id: 'bacaan2', label: 'Bacaan 2', type: 'static', titleCode: 'A011', textCode: 'B011', defaultTitle: '(umat duduk) BACAAN II | (Sumber)', autoText: 'bacaan1' },
   { id: 'baitPengantarInjilRefren', label: 'Bait Pengantar Injil Refren', type: 'static', titleCode: 'A012', imageCode: 'C012', defaultTitle: '(umat berdiri) BAIT PENGANTAR INJIL' },
   { id: 'baitPengantarInjilBait', label: 'Bait Pengantar Injil Bait', type: 'static', titleCode: 'A013', textCode: 'B013', imageCode: 'C013', defaultTitle: '(umat berdiri) BAIT PENGANTAR INJIL' },
   { id: 'bacaanInjil', label: 'Bacaan Injil', type: 'static', titleCode: 'A014', textCode: 'B014', defaultTitle: '(umat berdiri) BACAAN INJIL | (Sumber)', autoText: 'injil' },
   { id: 'doaUmatImam1', label: 'Doa Umat Imam 1', type: 'static', titleCode: 'A015', textCode: 'B015', defaultTitle: '(umat berdiri) DOA UMAT' },
-  { id: 'doaUmatLektor', label: 'Doa Umat Lektor', type: 'dynamic', titleCode: 'A016', textCode: 'B016', defaultTitle: '(umat berdiri) DOA UMAT', interleaveJawabanUmat: true },
+  { id: 'doaUmatLektor', label: 'Doa Umat Lektor', type: 'dynamic', titleCode: 'A016', textCode: 'B016', defaultTitle: '(umat berdiri) DOA UMAT', interleaveType: 'jawabanUmat', itemLabel: 'Lektor' },
   { id: 'doaUmatImam2', label: 'Doa Umat Imam 2', type: 'static', titleCode: 'A026', textCode: 'B026', defaultTitle: '(umat berdiri) DOA UMAT' },
-  { id: 'doaUmatJawabanUmat', label: 'Doa Umat Jawaban Umat', type: 'static', titleCode: 'A27', textCode: 'B27', defaultTitle: '(umat berdiri) DOA UMAT' },
-  { id: 'laguPersembahan', label: 'Lagu Persembahan', type: 'dynamic', titleCode: 'A28', textCode: 'B28', imageCode: 'C28', defaultTitle: '(umat duduk) NYANYIAN PERSEMBAHAN' },
-  { id: 'doaAtasPersembahan', label: 'Doa Atas Persembahan', type: 'static', titleCode: 'A29', textCode: 'B29', defaultTitle: '(umat berdiri) DOA ATAS PERSEMBAHAN', autoText: 'amin' },
-  { id: 'laguKomuni', label: 'Lagu Komuni', type: 'dynamic', titleCode: 'A30', textCode: 'B30', imageCode: 'C30', defaultTitle: '(umat duduk) MADAH PUJIAN' },
-  { id: 'doaSesudahKomuni', label: 'Doa Sesudah Komuni', type: 'static', titleCode: 'A33', textCode: 'B33', defaultTitle: '(umat berdiri) DOA SESUDAH KOMUNI', autoText: 'amin' },
-  { id: 'laguPenutup', label: 'Lagu Penutup', type: 'dynamic', titleCode: 'A34', textCode: 'B34', imageCode: 'C34', defaultTitle: '(umat berdiri) NYANYIAN PERARAKAN KELUAR' }
+  { id: 'doaUmatJawabanUmat', label: 'Doa Umat Jawaban Umat', type: 'static', titleCode: 'A027', textCode: 'B027', defaultTitle: '(umat berdiri) DOA UMAT' },
+  { id: 'laguPersembahan', label: 'Lagu Persembahan', type: 'dynamic', titleCode: 'A028', textCode: 'B028', imageCode: 'C028', defaultTitle: '(umat duduk) NYANYIAN PERSEMBAHAN', interleaveType: 'empty', itemLabel: 'Lagu Persembahan' },
+  { id: 'doaAtasPersembahan', label: 'Doa Atas Persembahan', type: 'static', titleCode: 'A029', textCode: 'B029', defaultTitle: '(umat berdiri) DOA ATAS PERSEMBAHAN', autoText: 'amin' },
+  { id: 'laguKomuni', label: 'Lagu Komuni', type: 'dynamic', titleCode: 'A030', textCode: 'B030', imageCode: 'C030', defaultTitle: '(umat duduk) MADAH PUJIAN', interleaveType: 'empty', itemLabel: 'Lagu Komuni' },
+  { id: 'doaSesudahKomuni', label: 'Doa Sesudah Komuni', type: 'static', titleCode: 'A033', textCode: 'B033', defaultTitle: '(umat berdiri) DOA SESUDAH KOMUNI', autoText: 'amin' },
+  { id: 'laguPenutup', label: 'Lagu Penutup', type: 'dynamic', titleCode: 'A034', textCode: 'B034', imageCode: 'C034', defaultTitle: '(umat berdiri) NYANYIAN PERARAKAN KELUAR', interleaveType: 'empty', itemLabel: 'Lagu Penutup' }
 ];
 
 export default function App() {
@@ -63,25 +63,35 @@ export default function App() {
 
   useEffect(() => {
     if (massType === 'mass') {
-      const initialData: Record<string, string> = { ...formData };
-      MASS_FIELDS.forEach(field => {
-        if (field.type === 'static') {
-          if (!initialData[field.titleCode!]) initialData[field.titleCode!] = field.defaultTitle;
-          if (field.autoText) {
-            const autoText = getAutoText(field.autoText, language);
-            // Only set if empty or if it exactly matches the previous language's auto text
-            // For simplicity, we just set it if it's empty or we can just append it if not there
-            if (!initialData[field.textCode!]) {
-              initialData[field.textCode!] = autoText.trim();
-            } else if (initialData[field.textCode!] === getAutoText(field.autoText, language === 'bahasa indonesia' ? 'bahasa jawa' : 'bahasa indonesia').trim()) {
-              initialData[field.textCode!] = autoText.trim();
+      setFormData(prev => {
+        const newData = { ...prev };
+        let changed = false;
+        MASS_FIELDS.forEach(field => {
+          if (field.type === 'static') {
+            if (!newData[field.titleCode!]) {
+              newData[field.titleCode!] = field.defaultTitle;
+              changed = true;
             }
           }
-        }
+        });
+        return changed ? newData : prev;
       });
-      setFormData(initialData);
+
+      setMassDynamicFields(prev => {
+        const newDynamic = { ...prev };
+        let changed = false;
+        MASS_FIELDS.forEach(field => {
+          if (field.type === 'dynamic') {
+            if (!newDynamic[field.id] || newDynamic[field.id].length === 0) {
+              newDynamic[field.id] = [{ title: field.defaultTitle, text: '', image: '' }];
+              changed = true;
+            }
+          }
+        });
+        return changed ? newDynamic : prev;
+      });
     }
-  }, [massType, language]);
+  }, [massType, language, placeholders]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -129,7 +139,24 @@ export default function App() {
       const finalData = { ...formData };
       
       if (massType === 'mass') {
-        const jawabanUmat = finalData['B27'] || '';
+        // Append auto text for static fields
+        MASS_FIELDS.forEach(field => {
+          if (field.type === 'static' && field.autoText && field.textCode) {
+            const autoText = getAutoText(field.autoText, language);
+            const currentText = finalData[field.textCode] || '';
+            if (currentText && !currentText.includes(autoText.trim())) {
+               finalData[field.textCode] = currentText + autoText;
+            } else if (!currentText) {
+               finalData[field.textCode] = autoText.trim();
+            }
+          }
+        });
+
+        const jawabanUmatTitle = finalData['A027'] || '(umat berdiri) DOA UMAT';
+        const jawabanUmatText = finalData['B027'] || '';
+        const refrenTitle = finalData['A07'] || '(umat duduk) MAZMUR TANGGAPAN';
+        const refrenText = finalData['B07'] || '';
+        const refrenImage = finalData['C07'] || '';
         
         MASS_FIELDS.forEach(field => {
           if (field.type === 'dynamic') {
@@ -150,13 +177,17 @@ export default function App() {
                   images.push(item.image || ''); // Repeat image for chunks of the same item
                 });
                 
-                // Add the separator (empty slide or Jawaban Umat)
+                // Add the separator
                 if (index < items.length - 1) {
-                  if (field.interleaveJawabanUmat) {
-                    titles.push(finalData['A27'] || '(umat berdiri) DOA UMAT');
-                    texts.push(jawabanUmat);
+                  if (field.interleaveType === 'jawabanUmat') {
+                    titles.push(jawabanUmatTitle);
+                    texts.push(jawabanUmatText);
                     images.push('');
-                  } else {
+                  } else if (field.interleaveType === 'refren') {
+                    titles.push(refrenTitle);
+                    texts.push(refrenText);
+                    images.push(refrenImage);
+                  } else if (field.interleaveType === 'empty') {
                     titles.push('');
                     texts.push('');
                     images.push('');
@@ -450,15 +481,20 @@ export default function App() {
                           <div className="space-y-6">
                             {massDynamicFields[field.id]?.map((item, index) => (
                               <div key={index} className="relative pl-4 border-l-2 border-[#0f6cbd] space-y-4">
-                                {index > 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={() => removeDynamicItem(field.id, index)}
-                                    className="absolute -top-2 -right-2 p-1.5 text-[#605e5c] hover:text-[#d13438] hover:bg-[#fde7e9] rounded-md transition-colors"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                )}
+                                <div className="flex items-center justify-between">
+                                  <h4 className="text-sm font-semibold text-[#0f6cbd]">
+                                    {field.itemLabel || field.label} {index + 1}
+                                  </h4>
+                                  {index > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => removeDynamicItem(field.id, index)}
+                                      className="p-1.5 text-[#605e5c] hover:text-[#d13438] hover:bg-[#fde7e9] rounded-md transition-colors"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </div>
                                 {field.titleCode && (
                                   <div>
                                     <label className="block text-sm font-medium text-[#605e5c] mb-1">Title {`{${field.titleCode}}`}</label>

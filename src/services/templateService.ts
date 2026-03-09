@@ -13,7 +13,7 @@ export async function extractTemplateLayout(file: File): Promise<any[]> {
     if (filename.startsWith('ppt/slides/slide') && filename.endsWith('.xml')) {
       const xml = (fileData as any).asText();
       const rawText = xml.replace(/<[^>]+>/g, '');
-      const regex = /\{([A-Z]\d{2})\}/g;
+      const regex = /\{([A-Z]\d{2,3})\}/g;
       let match;
       while ((match = regex.exec(rawText)) !== null) {
         placeholders.add(match[1]);
@@ -201,8 +201,8 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
       let xml = (fileData as any).asText();
       
       // Fix duplicate open/close tags
-      xml = xml.replace(/\{\{([A-Z]\d{2})/g, '{$1');
-      xml = xml.replace(/([A-Z]\d{2})\}\}/g, '$1}');
+      xml = xml.replace(/\{\{([A-Z]\d{2,3})/g, '{$1');
+      xml = xml.replace(/([A-Z]\d{2,3})\}\}/g, '$1}');
       
       // Fix docxtemplater duplicate close tags issue where it sees "B010}}"
       // This happens when we replace {B01} with {B01_0} and there was already a stray }
@@ -213,7 +213,7 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
       // Map placeholders for slides
       if (filename.startsWith('ppt/slides/slide')) {
         const rawText = xml.replace(/<[^>]+>/g, '');
-        const regex = /\{([A-Z]\d{2})\}/g;
+        const regex = /\{([A-Z]\d{2,3})\}/g;
         let match;
         const phs = new Set<string>();
         while ((match = regex.exec(rawText)) !== null) {
