@@ -1,6 +1,8 @@
 import PizZip from 'pizzip';
 // @ts-ignore
 import Docxtemplater from 'docxtemplater';
+// @ts-ignore
+import ImageModule from 'docxtemplater-image-module-free';
 import { chunkText } from '../utils/chunkText';
 
 export async function extractTemplateLayout(file: File): Promise<any[]> {
@@ -241,6 +243,7 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
   }
 
   const flatData: Record<string, string> = {};
+  const slideGroups: Record<string, string[]> = {};
 
   // Duplicate slides and rename placeholders
   for (const [slideName, phs] of slideToPlaceholders.entries()) {
@@ -254,6 +257,7 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
     // Duplicate the slide if we have more than 1 chunk
     const newSlideNames = duplicateSlide(zip, slideName, maxChunks - 1);
     const allSlides = [slideName, ...newSlideNames];
+    slideGroups[slideName] = allSlides;
 
     for (let i = 0; i < allSlides.length; i++) {
       const currentSlide = allSlides[i];
@@ -267,7 +271,10 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
         const regex = new RegExp(regexStr, 'g');
         
         // Rename placeholder in XML (e.g., {A01} -> {A01_0})
-        const newPh = `{${ph}_${i}}`;
+        let newPh = `{${ph}_${i}}`;
+        if (ph.startsWith('C')) {
+          newPh = `{%${ph}_${i}}`;
+        }
         xml = xml.replace(regex, newPh);
         
         // Populate flatData for docxtemplater
@@ -294,14 +301,127 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
       zip.file(currentSlide, xml);
     }
   }
-  
+
+  // Handle slide interleaving/reordering
+  if (data._slideOrder && Array.isArray(data._slideOrder)) {
+    let presRelsXml = zip.file('ppt/_rels/presentation.xml.rels')?.asText() || '';
+    let presXml = zip.file('ppt/presentation.xml')?.asText() || '';
+    
+    // Map slideName to rId
+    const slideToRId: Record<string, string> = {};
+    const relRegex = /<Relationship[^>]+Id="([^"]+)"[^>]+Target="([^"]+)"/g;
+    let relMatch;
+    while ((relMatch = relRegex.exec(presRelsXml)) !== null) {
+      const rId = relMatch[1];
+      let target = relMatch[2];
+      if (target.startsWith('slides/')) {
+        target = 'ppt/' + target;
+      }
+      slideToRId[target] = rId;
+    }
+
+    // Map placeholder instances (e.g., 'A014_0') to rId
+    const phInstanceToRId: Record<string, string> = {};
+    for (const [slideName, phs] of slideToPlaceholders.entries()) {
+      const rIds = slideGroups[slideName]?.map(s => slideToRId[s]).filter(Boolean) || [];
+      for (const ph of phs) {
+        for (let i = 0; i < rIds.length; i++) {
+          phInstanceToRId[`${ph}_${i}`] = rIds[i];
+        }
+      }
+    }
+
+    // Extract sldId tags
+    const sldIdLstMatch = presXml.match(/<p:sldIdLst>([\s\S]*?)<\/p:sldIdLst>/);
+    if (sldIdLstMatch) {
+      const sldIdLstInner = sldIdLstMatch[1];
+      const sldTags = sldIdLstInner.match(/<p:sldId[^>]+r:id="[^"]+"[^>]*\/>/g) || [];
+      
+      let newSldTags = [...sldTags];
+
+      for (const orderGroup of data._slideOrder) {
+        // orderGroup is an array of placeholder instances, e.g., ['A014_0', 'A014_1', 'A015_0']
+        const groupRIds: string[] = [];
+        for (const phInstance of orderGroup) {
+          if (phInstanceToRId[phInstance]) {
+            groupRIds.push(phInstanceToRId[phInstance]);
+          }
+        }
+
+        if (groupRIds.length > 1) {
+          // Find the minimum index in newSldTags for all these rIds
+          let minIdx = newSldTags.length;
+          const allRIdsToOrder = new Set(groupRIds);
+          
+          for (const rId of groupRIds) {
+            const idx = newSldTags.findIndex(tag => tag.includes(`r:id="${rId}"`));
+            if (idx !== -1 && idx < minIdx) {
+              minIdx = idx;
+            }
+          }
+
+          if (minIdx < newSldTags.length) {
+            // Remove all these tags from newSldTags
+            const extractedTags: Record<string, string> = {};
+            newSldTags = newSldTags.filter(tag => {
+              const match = tag.match(/r:id="([^"]+)"/);
+              if (match && allRIdsToOrder.has(match[1])) {
+                extractedTags[match[1]] = tag;
+                return false;
+              }
+              return true;
+            });
+
+            // Build the ordered sequence
+            const orderedSequence: string[] = [];
+            for (const rId of groupRIds) {
+              if (extractedTags[rId]) {
+                orderedSequence.push(extractedTags[rId]);
+              }
+            }
+
+            // Insert the ordered sequence at minIdx
+            newSldTags.splice(minIdx, 0, ...orderedSequence);
+          }
+        }
+      }
+
+      // Replace in presXml
+      const newSldIdLst = `<p:sldIdLst>${newSldTags.join('')}</p:sldIdLst>`;
+      presXml = presXml.replace(/<p:sldIdLst>[\s\S]*?<\/p:sldIdLst>/, newSldIdLst);
+      zip.file('ppt/presentation.xml', presXml);
+    }
+  }
+
   const DocxtemplaterConstructor = typeof Docxtemplater === 'function' 
     ? Docxtemplater 
     : (Docxtemplater as any).default || Docxtemplater;
+
+  const opts = {
+    centered: false,
+    getImage: function (tagValue: string) {
+      if (tagValue && tagValue.startsWith('data:image')) {
+        const base64Data = tagValue.split(',')[1];
+        const binaryString = window.atob(base64Data);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        return bytes.buffer;
+      }
+      return null;
+    },
+    getSize: function (img: any, tagValue: string, tagName: string) {
+      return [600, 400];
+    }
+  };
+  const imageModule = new ImageModule(opts);
   
   const doc = new DocxtemplaterConstructor(zip, {
     paragraphLoop: true,
     linebreaks: true,
+    modules: [imageModule],
     delimiters: { start: '{', end: '}' },
     nullGetter: function(part: any) {
       if (!part.module) {

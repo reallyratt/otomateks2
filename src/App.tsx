@@ -9,9 +9,7 @@ import { extractTemplateLayout, generateFromTemplate } from './services/template
 import { chunkText } from './utils/chunkText';
 
 const getAutoText = (type: string, lang: string) => {
-  if (type === 'amin') return "\n\nU: Amin";
-  if (type === 'bacaan1') return lang === 'bahasa jawa' ? "\n\nMakaten sabda Dalem Gusti...\nU: Sembah nuwun konjuk ing Gusti" : "\n\nDemikianlah sabda Tuhan...\nU: Syukur kepada Allah";
-  if (type === 'injil') return lang === 'bahasa jawa' ? "\n\nMangkono sabda Dalem Gusti...\nU: Pinujia Sang Kristus" : "\n\nDemikianlah Sabda Tuhan...\nU: Terpujilah Kristus";
+  if (type === 'amin') return "\n\nAmin.";
   return "";
 };
 
@@ -21,22 +19,22 @@ const MASS_FIELDS = [
   { id: 'tuhanKasihanilah2', label: 'Tuhan Kasihanilah 2', type: 'static', titleCode: 'A03', textCode: 'B03', defaultTitle: 'TUHAN KASIHANILAH KAMI' },
   { id: 'tuhanKasihanilah3', label: 'Tuhan Kasihanilah 3', type: 'static', titleCode: 'A04', textCode: 'B04', defaultTitle: 'TUHAN KASIHANILAH KAMI' },
   { id: 'doaKolekta', label: 'Doa Kolekta', type: 'static', titleCode: 'A05', textCode: 'B05', defaultTitle: '(umat berdiri) DOA KOLEKTA', autoText: 'amin' },
-  { id: 'bacaan1', label: 'Bacaan 1', type: 'static', titleCode: 'A06', textCode: 'B06', defaultTitle: '(umat duduk) BACAAN I | (Sumber)', autoText: 'bacaan1' },
+  { id: 'bacaan1', label: 'Bacaan 1', type: 'static', titleCode: 'A06', textCode: 'B06', defaultTitle: '(umat duduk) BACAAN I | (Sumber)' },
   { id: 'mazmurRefren', label: 'Mazmur Tanggapan Refren', type: 'static', titleCode: 'A07', textCode: 'B07', imageCode: 'C07', defaultTitle: '(umat duduk) MAZMUR TANGGAPAN' },
   { id: 'mazmurAyat', label: 'Mazmur Tanggapan Ayat', type: 'dynamic', titleCode: 'A08', textCode: 'B08', imageCode: 'C08', defaultTitle: '(umat duduk) MAZMUR TANGGAPAN', interleaveType: 'refren', itemLabel: 'Ayat' },
-  { id: 'bacaan2', label: 'Bacaan 2', type: 'static', titleCode: 'A011', textCode: 'B011', defaultTitle: '(umat duduk) BACAAN II | (Sumber)', autoText: 'bacaan1' },
-  { id: 'baitPengantarInjilRefren', label: 'Bait Pengantar Injil Refren', type: 'static', titleCode: 'A012', imageCode: 'C012', defaultTitle: '(umat berdiri) BAIT PENGANTAR INJIL' },
-  { id: 'baitPengantarInjilBait', label: 'Bait Pengantar Injil Bait', type: 'static', titleCode: 'A013', textCode: 'B013', imageCode: 'C013', defaultTitle: '(umat berdiri) BAIT PENGANTAR INJIL' },
-  { id: 'bacaanInjil', label: 'Bacaan Injil', type: 'static', titleCode: 'A014', textCode: 'B014', defaultTitle: '(umat berdiri) BACAAN INJIL | (Sumber)', autoText: 'injil' },
-  { id: 'doaUmatImam1', label: 'Doa Umat Imam 1', type: 'static', titleCode: 'A015', textCode: 'B015', defaultTitle: '(umat berdiri) DOA UMAT' },
-  { id: 'doaUmatLektor', label: 'Doa Umat Lektor', type: 'dynamic', titleCode: 'A016', textCode: 'B016', defaultTitle: '(umat berdiri) DOA UMAT', interleaveType: 'jawabanUmat', itemLabel: 'Lektor' },
-  { id: 'doaUmatImam2', label: 'Doa Umat Imam 2', type: 'static', titleCode: 'A026', textCode: 'B026', defaultTitle: '(umat berdiri) DOA UMAT' },
-  { id: 'doaUmatJawabanUmat', label: 'Doa Umat Jawaban Umat', type: 'static', titleCode: 'A027', textCode: 'B027', defaultTitle: '(umat berdiri) DOA UMAT' },
-  { id: 'laguPersembahan', label: 'Lagu Persembahan', type: 'dynamic', titleCode: 'A028', textCode: 'B028', imageCode: 'C028', defaultTitle: '(umat duduk) NYANYIAN PERSEMBAHAN', interleaveType: 'empty', itemLabel: 'Lagu Persembahan' },
-  { id: 'doaAtasPersembahan', label: 'Doa Atas Persembahan', type: 'static', titleCode: 'A029', textCode: 'B029', defaultTitle: '(umat berdiri) DOA ATAS PERSEMBAHAN', autoText: 'amin' },
-  { id: 'laguKomuni', label: 'Lagu Komuni', type: 'dynamic', titleCode: 'A030', textCode: 'B030', imageCode: 'C030', defaultTitle: '(umat duduk) MADAH PUJIAN', interleaveType: 'empty', itemLabel: 'Lagu Komuni' },
-  { id: 'doaSesudahKomuni', label: 'Doa Sesudah Komuni', type: 'static', titleCode: 'A033', textCode: 'B033', defaultTitle: '(umat berdiri) DOA SESUDAH KOMUNI', autoText: 'amin' },
-  { id: 'laguPenutup', label: 'Lagu Penutup', type: 'dynamic', titleCode: 'A034', textCode: 'B034', imageCode: 'C034', defaultTitle: '(umat berdiri) NYANYIAN PERARAKAN KELUAR', interleaveType: 'empty', itemLabel: 'Lagu Penutup' }
+  { id: 'bacaan2', label: 'Bacaan 2', type: 'static', titleCode: 'A09', textCode: 'B09', defaultTitle: '(umat duduk) BACAAN II | (Sumber)' },
+  { id: 'baitPengantarInjilRefren', label: 'Bait Pengantar Injil Refren', type: 'static', titleCode: 'A010', textCode: 'B010', imageCode: 'C010', defaultTitle: '(umat berdiri) BAIT PENGANTAR INJIL' },
+  { id: 'baitPengantarInjilBait', label: 'Bait Pengantar Injil Bait', type: 'static', titleCode: 'A011', textCode: 'B011', imageCode: 'C011', defaultTitle: '(umat berdiri) BAIT PENGANTAR INJIL' },
+  { id: 'bacaanInjil', label: 'Bacaan Injil', type: 'static', titleCode: 'A012', textCode: 'B012', defaultTitle: '(umat berdiri) BACAAN INJIL | (Sumber)' },
+  { id: 'doaUmatImam1', label: 'Doa Umat Imam 1', type: 'static', titleCode: 'A013', textCode: 'B013', defaultTitle: '(umat berdiri) DOA UMAT' },
+  { id: 'doaUmatLektor', label: 'Doa Umat Lektor', type: 'dynamic', titleCode: 'A014', textCode: 'B014', defaultTitle: '(umat berdiri) DOA UMAT', interleaveType: 'jawabanUmat', itemLabel: 'Lektor' },
+  { id: 'doaUmatJawabanUmat', label: 'Doa Umat Jawaban Umat', type: 'static', titleCode: 'A015', textCode: 'B015', defaultTitle: '(umat berdiri) DOA UMAT' },
+  { id: 'doaUmatImam2', label: 'Doa Umat Imam 2', type: 'static', titleCode: 'A016', textCode: 'B016', defaultTitle: '(umat berdiri) DOA UMAT' },
+  { id: 'laguPersembahan', label: 'Lagu Persembahan', type: 'dynamic', titleCode: 'A017', textCode: 'B017', imageCode: 'C017', defaultTitle: '(umat duduk) NYANYIAN PERSEMBAHAN', interleaveType: 'empty', itemLabel: 'Lagu Persembahan' },
+  { id: 'doaAtasPersembahan', label: 'Doa Atas Persembahan', type: 'static', titleCode: 'A018', textCode: 'B018', defaultTitle: '(umat berdiri) DOA ATAS PERSEMBAHAN', autoText: 'amin' },
+  { id: 'laguKomuni', label: 'Lagu Komuni', type: 'dynamic', titleCode: 'A019', textCode: 'B019', imageCode: 'C019', defaultTitle: '(umat duduk) MADAH PUJIAN', interleaveType: 'empty', itemLabel: 'Lagu Komuni' },
+  { id: 'doaSesudahKomuni', label: 'Doa Sesudah Komuni', type: 'static', titleCode: 'A020', textCode: 'B020', defaultTitle: '(umat berdiri) DOA SESUDAH KOMUNI', autoText: 'amin' },
+  { id: 'laguPenutup', label: 'Lagu Penutup', type: 'dynamic', titleCode: 'A021', textCode: 'B021', imageCode: 'C021', defaultTitle: '(umat berdiri) NYANYIAN PERARAKAN KELUAR', interleaveType: 'empty', itemLabel: 'Lagu Penutup' }
 ];
 
 export default function App() {
@@ -131,6 +129,16 @@ export default function App() {
     }));
   };
 
+  const handleImageUpload = (file: File, callback: (base64: string) => void) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      callback(reader.result as string);
+    };
+    if (file) {
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleGenerate = async () => {
     if (!templateFile) return;
     
@@ -152,12 +160,14 @@ export default function App() {
           }
         });
 
-        const jawabanUmatTitle = finalData['A027'] || '(umat berdiri) DOA UMAT';
-        const jawabanUmatText = finalData['B027'] || '';
+        const jawabanUmatTitle = finalData['A015'] || '(umat berdiri) DOA UMAT';
+        const jawabanUmatText = finalData['B015'] || '';
         const refrenTitle = finalData['A07'] || '(umat duduk) MAZMUR TANGGAPAN';
         const refrenText = finalData['B07'] || '';
         const refrenImage = finalData['C07'] || '';
         
+        const slideOrderGroups: string[][] = [];
+
         MASS_FIELDS.forEach(field => {
           if (field.type === 'dynamic') {
             const items = massDynamicFields[field.id];
@@ -177,30 +187,81 @@ export default function App() {
                   images.push(item.image || ''); // Repeat image for chunks of the same item
                 });
                 
-                // Add the separator
-                if (index < items.length - 1) {
-                  if (field.interleaveType === 'jawabanUmat') {
-                    titles.push(jawabanUmatTitle);
-                    texts.push(jawabanUmatText);
-                    images.push('');
-                  } else if (field.interleaveType === 'refren') {
-                    titles.push(refrenTitle);
-                    texts.push(refrenText);
-                    images.push(refrenImage);
-                  } else if (field.interleaveType === 'empty') {
-                    titles.push('');
-                    texts.push('');
-                    images.push('');
-                  }
+                // Add the separator for 'empty'
+                if (field.interleaveType === 'empty') {
+                  titles.push('');
+                  texts.push('');
+                  images.push('');
                 }
               });
               
               if (field.titleCode) finalData[field.titleCode] = titles;
               if (field.textCode) finalData[field.textCode] = texts;
               if (field.imageCode) finalData[field.imageCode] = images;
+
+              // Handle structural interleaving (using exact slides)
+              if (field.interleaveType === 'jawabanUmat' || field.interleaveType === 'refren') {
+                const isJU = field.interleaveType === 'jawabanUmat';
+                const targetTitleCode = isJU ? 'A015' : 'A07';
+                const targetTextCode = isJU ? 'B015' : 'B07';
+                const targetImageCode = isJU ? '' : 'C07';
+                
+                const targetTitle = isJU ? jawabanUmatTitle : refrenTitle;
+                const targetText = isJU ? jawabanUmatText : refrenText;
+                const targetImage = isJU ? '' : refrenImage;
+
+                const targetTitles: string[] = [];
+                const targetTexts: string[] = [];
+                const targetImages: string[] = [];
+
+                const slideOrder: string[] = [];
+                let mainChunkIndex = 0;
+                let targetIndex = 0;
+
+                if (!isJU) {
+                  // For Mazmur (Refren), we want the initial Refren first
+                  targetTitles.push(targetTitle);
+                  targetTexts.push(targetText);
+                  if (targetImageCode) targetImages.push(targetImage);
+                  
+                  slideOrder.push(`${targetTitleCode}_${targetIndex}`);
+                  targetIndex++;
+                }
+
+                items.forEach((item) => {
+                  const itemChunks = chunkText(item.text || '', 130);
+                  const numChunks = Math.max(1, itemChunks.length);
+                  
+                  // Add main chunks to slide order
+                  for (let i = 0; i < numChunks; i++) {
+                    slideOrder.push(`${field.titleCode}_${mainChunkIndex}`);
+                    mainChunkIndex++;
+                  }
+
+                  // Add target (interleaved) slide
+                  targetTitles.push(targetTitle);
+                  targetTexts.push(targetText);
+                  if (targetImageCode) targetImages.push(targetImage);
+                  
+                  slideOrder.push(`${targetTitleCode}_${targetIndex}`);
+                  targetIndex++;
+                });
+
+                finalData[targetTitleCode] = targetTitles;
+                finalData[targetTextCode] = targetTexts;
+                if (targetImageCode) finalData[targetImageCode] = targetImages;
+
+                if (field.titleCode) {
+                  slideOrderGroups.push(slideOrder);
+                }
+              }
             }
           }
         });
+
+        if (slideOrderGroups.length > 0) {
+          finalData['_slideOrder'] = slideOrderGroups;
+        }
       }
 
       const blob = await generateFromTemplate(templateFile, finalData);
@@ -305,7 +366,7 @@ export default function App() {
           </ol>
         </nav>
 
-        <div className="bg-white shadow-sm border border-[#edebe9] rounded-lg p-6 sm:p-8 min-h-[400px] flex flex-col">
+        <div className="flex flex-col min-h-[400px]">
           <div className="flex-grow space-y-6">
             
             {/* Step 1: Upload PPT */}
@@ -467,13 +528,21 @@ export default function App() {
                             )}
                             {field.imageCode && (
                               <div>
-                                <label className="block text-sm font-medium text-[#605e5c] mb-1">Image URL {`{${field.imageCode}}`}</label>
+                                <label className="block text-sm font-medium text-[#605e5c] mb-1">Image {`{${field.imageCode}}`}</label>
                                 <input
-                                  type="text"
-                                  className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm outline-none transition-all"
-                                  value={formData[field.imageCode] || ''}
-                                  onChange={(e) => handleInputChange(field.imageCode!, e.target.value)}
+                                  type="file"
+                                  accept="image/*"
+                                  className="block w-full text-sm text-[#605e5c] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#f3f2f1] file:text-[#0f6cbd] hover:file:bg-[#edebe9] transition-all"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      handleImageUpload(file, (base64) => handleInputChange(field.imageCode!, base64));
+                                    }
+                                  }}
                                 />
+                                {formData[field.imageCode] && (
+                                  <img src={formData[field.imageCode]} alt="Preview" className="mt-2 h-20 object-contain rounded-md border border-[#edebe9]" />
+                                )}
                               </div>
                             )}
                           </div>
@@ -519,13 +588,21 @@ export default function App() {
                                 )}
                                 {field.imageCode && (
                                   <div>
-                                    <label className="block text-sm font-medium text-[#605e5c] mb-1">Image URL {`{${field.imageCode}}`}</label>
+                                    <label className="block text-sm font-medium text-[#605e5c] mb-1">Image {`{${field.imageCode}}`}</label>
                                     <input
-                                      type="text"
-                                      className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm outline-none transition-all"
-                                      value={item.image || ''}
-                                      onChange={(e) => handleDynamicInputChange(field.id, index, 'image', e.target.value)}
+                                      type="file"
+                                      accept="image/*"
+                                      className="block w-full text-sm text-[#605e5c] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#f3f2f1] file:text-[#0f6cbd] hover:file:bg-[#edebe9] transition-all"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          handleImageUpload(file, (base64) => handleDynamicInputChange(field.id, index, 'image', base64));
+                                        }
+                                      }}
                                     />
+                                    {item.image && (
+                                      <img src={item.image} alt="Preview" className="mt-2 h-20 object-contain rounded-md border border-[#edebe9]" />
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -617,7 +694,7 @@ export default function App() {
                       <li>• Template: <span className="font-medium text-[#323130]">{templateFile?.name || 'None'}</span></li>
                       <li>• Language: <span className="font-medium text-[#323130] capitalize">{language}</span></li>
                       <li>• Mass Type: <span className="font-medium text-[#323130] capitalize">{massType}</span></li>
-                      <li>• Placeholders Filled: <span className="font-medium text-[#323130]">{Object.values(formData).filter(v => v.trim() !== '').length} / {placeholders.length}</span></li>
+                      <li>• Placeholders Filled: <span className="font-medium text-[#323130]">{(Object.values(formData) as string[]).filter(v => typeof v === 'string' && v.trim() !== '').length} / {placeholders.length}</span></li>
                     </ul>
                   </div>
                 </div>
