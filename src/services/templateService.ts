@@ -314,39 +314,91 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
     while ((relMatch = relRegex.exec(presRelsXml)) !== null) {
       const rId = relMatch[1];
       let target = relMatch[2];
-      if (target.startsWith('slides/')) {
-        target = 'ppt/' + target;
+      const slideMatch = target.match(/slide\d+\.xml/);
+      if (slideMatch) {
+        target = 'ppt/slides/' + slideMatch[0];
       }
       slideToRId[target] = rId;
     }
 
-    // Map placeholder instances (e.g., 'A014_0') to rId
-    const phInstanceToRId: Record<string, string> = {};
+    // Map placeholder instances (e.g., 'A014_0') to rIds (array to handle placeholders on multiple slides)
+    const phInstanceToRIds: Record<string, string[]> = {};
     for (const [slideName, phs] of slideToPlaceholders.entries()) {
       const rIds = slideGroups[slideName]?.map(s => slideToRId[s]).filter(Boolean) || [];
       for (const ph of phs) {
         for (let i = 0; i < rIds.length; i++) {
-          phInstanceToRId[`${ph}_${i}`] = rIds[i];
+          const key = `${ph}_${i}`;
+          if (!phInstanceToRIds[key]) phInstanceToRIds[key] = [];
+          phInstanceToRIds[key].push(rIds[i]);
         }
       }
     }
 
     // Extract sldId tags
-    const sldIdLstMatch = presXml.match(/<p:sldIdLst>([\s\S]*?)<\/p:sldIdLst>/);
+    const sldIdLstMatch = presXml.match(/<p:sldIdLst[^>]*>([\s\S]*?)<\/p:sldIdLst>/);
     if (sldIdLstMatch) {
       const sldIdLstInner = sldIdLstMatch[1];
-      const sldTags = sldIdLstInner.match(/<p:sldId[^>]+r:id="[^"]+"[^>]*\/>/g) || [];
+      const sldTags = sldIdLstInner.match(/<p:sldId[^>]+r:id="[^"]+"[^>]*>(?:<\/p:sldId>)?/g) || [];
       
       let newSldTags = [...sldTags];
 
       for (const orderGroup of data._slideOrder) {
         // orderGroup is an array of placeholder instances, e.g., ['A014_0', 'A014_1', 'A015_0']
+        // or an array of arrays of placeholder instances, e.g., [['B07_0', 'A07_0'], ['B06_0', 'A06_0']]
         const groupRIds: string[] = [];
-        for (const phInstance of orderGroup) {
-          if (phInstanceToRId[phInstance]) {
-            groupRIds.push(phInstanceToRId[phInstance]);
+        const seenRIds = new Set<string>();
+        const allPossibleRIds = new Set<string>();
+        
+        for (const phItem of orderGroup) {
+          let rIdToAdd: string | null = null;
+          
+          const tryAddRId = (phInstance: string) => {
+            const possibleRIds = phInstanceToRIds[phInstance];
+            if (possibleRIds) {
+              possibleRIds.forEach(id => allPossibleRIds.add(id));
+              for (const rId of possibleRIds) {
+                if (!seenRIds.has(rId)) {
+                  return rId;
+                }
+              }
+            }
+            return null;
+          };
+
+          if (Array.isArray(phItem)) {
+            for (const phInstance of phItem) {
+              rIdToAdd = tryAddRId(phInstance);
+              if (rIdToAdd) break;
+            }
+            // Also collect all possible rIds for the other phInstances in the array
+            // even if we already found a match, so we can clean them up
+            for (const phInstance of phItem) {
+               const possibleRIds = phInstanceToRIds[phInstance];
+               if (possibleRIds) {
+                 possibleRIds.forEach(id => allPossibleRIds.add(id));
+               }
+            }
+          } else {
+            rIdToAdd = tryAddRId(phItem);
+          }
+          
+          if (rIdToAdd) {
+            groupRIds.push(rIdToAdd);
+            seenRIds.add(rIdToAdd);
           }
         }
+
+        // Remove unused duplicate slides
+        newSldTags = newSldTags.filter(tag => {
+          const match = tag.match(/r:id="([^"]+)"/);
+          if (match) {
+            const rId = match[1];
+            if (allPossibleRIds.has(rId) && !seenRIds.has(rId)) {
+              return false; // Remove this unused slide
+            }
+          }
+          return true;
+        });
 
         if (groupRIds.length > 1) {
           // Find the minimum index in newSldTags for all these rIds
@@ -354,7 +406,10 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
           const allRIdsToOrder = new Set(groupRIds);
           
           for (const rId of groupRIds) {
-            const idx = newSldTags.findIndex(tag => tag.includes(`r:id="${rId}"`));
+            const idx = newSldTags.findIndex(tag => {
+              const match = tag.match(/r:id="([^"]+)"/);
+              return match && match[1] === rId;
+            });
             if (idx !== -1 && idx < minIdx) {
               minIdx = idx;
             }
@@ -387,8 +442,7 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
       }
 
       // Replace in presXml
-      const newSldIdLst = `<p:sldIdLst>${newSldTags.join('')}</p:sldIdLst>`;
-      presXml = presXml.replace(/<p:sldIdLst>[\s\S]*?<\/p:sldIdLst>/, newSldIdLst);
+      presXml = presXml.replace(/(<p:sldIdLst[^>]*>)[\s\S]*?(<\/p:sldIdLst>)/, `$1${newSldTags.join('')}$2`);
       zip.file('ppt/presentation.xml', presXml);
     }
   }

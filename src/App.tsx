@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FileUp, FileDown, Settings, ChevronRight, ChevronLeft, Check, Plus, Trash2 } from 'lucide-react';
+import { FileUp, FileDown, Settings, ChevronRight, ChevronLeft, Check, Plus, Trash2, AlignLeft } from 'lucide-react';
 import { extractTemplateLayout, generateFromTemplate } from './services/templateService';
 import { chunkText } from './utils/chunkText';
 
@@ -166,7 +166,7 @@ export default function App() {
         const refrenText = finalData['B07'] || '';
         const refrenImage = finalData['C07'] || '';
         
-        const slideOrderGroups: string[][] = [];
+        const slideOrderGroups: any[] = [];
 
         MASS_FIELDS.forEach(field => {
           if (field.type === 'dynamic') {
@@ -214,7 +214,7 @@ export default function App() {
                 const targetTexts: string[] = [];
                 const targetImages: string[] = [];
 
-                const slideOrder: string[] = [];
+                const slideOrder: string[][] = [];
                 let mainChunkIndex = 0;
                 let targetIndex = 0;
 
@@ -224,7 +224,10 @@ export default function App() {
                   targetTexts.push(targetText);
                   if (targetImageCode) targetImages.push(targetImage);
                   
-                  slideOrder.push(`${targetTitleCode}_${targetIndex}`);
+                  const targetPhs = [];
+                  if (targetTextCode) targetPhs.push(`${targetTextCode}_${targetIndex}`);
+                  if (targetTitleCode) targetPhs.push(`${targetTitleCode}_${targetIndex}`);
+                  slideOrder.push(targetPhs);
                   targetIndex++;
                 }
 
@@ -234,7 +237,10 @@ export default function App() {
                   
                   // Add main chunks to slide order
                   for (let i = 0; i < numChunks; i++) {
-                    slideOrder.push(`${field.titleCode}_${mainChunkIndex}`);
+                    const mainPhs = [];
+                    if (field.textCode) mainPhs.push(`${field.textCode}_${mainChunkIndex}`);
+                    if (field.titleCode) mainPhs.push(`${field.titleCode}_${mainChunkIndex}`);
+                    slideOrder.push(mainPhs);
                     mainChunkIndex++;
                   }
 
@@ -243,7 +249,10 @@ export default function App() {
                   targetTexts.push(targetText);
                   if (targetImageCode) targetImages.push(targetImage);
                   
-                  slideOrder.push(`${targetTitleCode}_${targetIndex}`);
+                  const targetPhs = [];
+                  if (targetTextCode) targetPhs.push(`${targetTextCode}_${targetIndex}`);
+                  if (targetTitleCode) targetPhs.push(`${targetTitleCode}_${targetIndex}`);
+                  slideOrder.push(targetPhs);
                   targetIndex++;
                 });
 
@@ -305,6 +314,11 @@ export default function App() {
       newItems.splice(index, 1);
       return { ...prev, [fieldId]: newItems };
     });
+  };
+
+  const handleParagraphify = (text: string) => {
+    if (!text) return '';
+    return text.split('\n').map(line => line.trim()).filter(line => line.length > 0).join(' ');
   };
 
   const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 4));
@@ -517,7 +531,17 @@ export default function App() {
                             )}
                             {field.textCode && (
                               <div>
-                                <label className="block text-sm font-medium text-[#605e5c] mb-1">Text {`{${field.textCode}}`}</label>
+                                <div className="flex items-center justify-between mb-1">
+                                  <label className="block text-sm font-medium text-[#605e5c]">Text {`{${field.textCode}}`}</label>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleInputChange(field.textCode!, handleParagraphify(formData[field.textCode!] || ''))}
+                                    className="p-1 text-[#605e5c] hover:text-[#0f6cbd] hover:bg-[#f3f2f1] rounded-md transition-colors"
+                                    title="Format as single paragraph"
+                                  >
+                                    <AlignLeft className="w-4 h-4" />
+                                  </button>
+                                </div>
                                 <textarea
                                   rows={4}
                                   className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm resize-none outline-none transition-all"
@@ -577,7 +601,17 @@ export default function App() {
                                 )}
                                 {field.textCode && (
                                   <div>
-                                    <label className="block text-sm font-medium text-[#605e5c] mb-1">Text {`{${field.textCode}}`}</label>
+                                    <div className="flex items-center justify-between mb-1">
+                                      <label className="block text-sm font-medium text-[#605e5c]">Text {`{${field.textCode}}`}</label>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDynamicInputChange(field.id, index, 'text', handleParagraphify(item.text || ''))}
+                                        className="p-1 text-[#605e5c] hover:text-[#0f6cbd] hover:bg-[#f3f2f1] rounded-md transition-colors"
+                                        title="Format as single paragraph"
+                                      >
+                                        <AlignLeft className="w-4 h-4" />
+                                      </button>
+                                    </div>
                                     <textarea
                                       rows={4}
                                       className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm resize-none outline-none transition-all"
@@ -620,13 +654,25 @@ export default function App() {
                       
                       return (
                         <div key={placeholder} className={isTextArea ? "sm:col-span-2" : ""}>
-                          <label htmlFor={placeholder} className="block text-sm font-medium text-[#605e5c] mb-1">
-                            {`{${placeholder}}`} - {
-                              typeCode === '01' ? 'Title' :
-                              typeCode === '02' ? 'Text Content' :
-                              typeCode === '03' ? 'Image URL' : 'Content'
-                            }
-                          </label>
+                          <div className="flex items-center justify-between mb-1">
+                            <label htmlFor={placeholder} className="block text-sm font-medium text-[#605e5c]">
+                              {`{${placeholder}}`} - {
+                                typeCode === '01' ? 'Title' :
+                                typeCode === '02' ? 'Text Content' :
+                                typeCode === '03' ? 'Image URL' : 'Content'
+                              }
+                            </label>
+                            {isTextArea && (
+                              <button
+                                type="button"
+                                onClick={() => handleInputChange(placeholder, handleParagraphify(formData[placeholder] || ''))}
+                                className="p-1 text-[#605e5c] hover:text-[#0f6cbd] hover:bg-[#f3f2f1] rounded-md transition-colors"
+                                title="Format as single paragraph"
+                              >
+                                <AlignLeft className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
                           <div className="mt-1">
                             {isTextArea ? (
                               <textarea
