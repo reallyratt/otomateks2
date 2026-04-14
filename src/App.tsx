@@ -4,38 +4,39 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FileUp, FileDown, Settings, ChevronRight, ChevronLeft, Check, Plus, Trash2, AlignLeft } from 'lucide-react';
+import { FileUp, FileDown, Settings, ChevronRight, ChevronLeft, Check, Plus, Trash2, AlignLeft, X } from 'lucide-react';
 import { extractTemplateLayout, generateFromTemplate } from './services/templateService';
 import { chunkText } from './utils/chunkText';
 import { ImageUploadList, ImageItem } from './components/ImageUploadList';
+import { SettingsModal } from './components/SettingsModal';
 
 const getAutoText = (type: string, lang: string) => {
-  if (type === 'amin') return "\n\nAmin.";
+  if (type === 'amin') return "\n\nU: Amin";
   return "";
 };
 
 const MASS_FIELDS = [
-  { id: 'laguPembuka', label: 'Lagu Pembuka', type: 'dynamic', titleCode: 'A01', textCode: 'B01', imageCode: 'C01', defaultTitle: '(umat berdiri) NYANYIAN PERARAKAN MASUK', interleaveType: 'empty', itemLabel: 'Lagu Pembuka' },
-  { id: 'tuhanKasihanilah1', label: 'Tuhan Kasihanilah 1', type: 'static', titleCode: 'A02', textCode: 'B02', defaultTitle: 'TUHAN KASIHANILAH KAMI' },
-  { id: 'tuhanKasihanilah2', label: 'Tuhan Kasihanilah 2', type: 'static', titleCode: 'A03', textCode: 'B03', defaultTitle: 'TUHAN KASIHANILAH KAMI' },
-  { id: 'tuhanKasihanilah3', label: 'Tuhan Kasihanilah 3', type: 'static', titleCode: 'A04', textCode: 'B04', defaultTitle: 'TUHAN KASIHANILAH KAMI' },
-  { id: 'doaKolekta', label: 'Doa Kolekta', type: 'static', titleCode: 'A05', textCode: 'B05', defaultTitle: '(umat berdiri) DOA KOLEKTA', autoText: 'amin' },
-  { id: 'bacaan1', label: 'Bacaan 1', type: 'static', titleCode: 'A06', textCode: 'B06', defaultTitle: '(umat duduk) BACAAN I | (Sumber)' },
-  { id: 'mazmurRefren', label: 'Mazmur Tanggapan Refren', type: 'static', titleCode: 'A07', textCode: 'B07', imageCode: 'C07', defaultTitle: '(umat duduk) MAZMUR TANGGAPAN' },
-  { id: 'mazmurAyat', label: 'Mazmur Tanggapan Ayat', type: 'dynamic', titleCode: 'A08', textCode: 'B08', imageCode: 'C08', defaultTitle: '(umat duduk) MAZMUR TANGGAPAN', interleaveType: 'refren', itemLabel: 'Ayat' },
-  { id: 'bacaan2', label: 'Bacaan 2', type: 'static', titleCode: 'A09', textCode: 'B09', defaultTitle: '(umat duduk) BACAAN II | (Sumber)' },
-  { id: 'baitPengantarInjilRefren', label: 'Bait Pengantar Injil Refren', type: 'static', titleCode: 'A010', textCode: 'B010', imageCode: 'C010', defaultTitle: '(umat berdiri) BAIT PENGANTAR INJIL' },
-  { id: 'baitPengantarInjilBait', label: 'Bait Pengantar Injil Bait', type: 'static', titleCode: 'A011', textCode: 'B011', imageCode: 'C011', defaultTitle: '(umat berdiri) BAIT PENGANTAR INJIL' },
-  { id: 'bacaanInjil', label: 'Bacaan Injil', type: 'static', titleCode: 'A012', textCode: 'B012', defaultTitle: '(umat berdiri) BACAAN INJIL | (Sumber)' },
-  { id: 'doaUmatImam1', label: 'Doa Umat Imam 1', type: 'static', titleCode: 'A013', textCode: 'B013', defaultTitle: '(umat berdiri) DOA UMAT' },
-  { id: 'doaUmatLektor', label: 'Doa Umat Lektor', type: 'dynamic', titleCode: 'A014', textCode: 'B014', defaultTitle: '(umat berdiri) DOA UMAT', interleaveType: 'jawabanUmat', itemLabel: 'Lektor' },
-  { id: 'doaUmatJawabanUmat', label: 'Doa Umat Jawaban Umat', type: 'static', titleCode: 'A015', textCode: 'B015', defaultTitle: '(umat berdiri) DOA UMAT' },
-  { id: 'doaUmatImam2', label: 'Doa Umat Imam 2', type: 'static', titleCode: 'A016', textCode: 'B016', defaultTitle: '(umat berdiri) DOA UMAT' },
-  { id: 'laguPersembahan', label: 'Lagu Persembahan', type: 'dynamic', titleCode: 'A017', textCode: 'B017', imageCode: 'C017', defaultTitle: '(umat duduk) NYANYIAN PERSEMBAHAN', interleaveType: 'empty', itemLabel: 'Lagu Persembahan' },
-  { id: 'doaAtasPersembahan', label: 'Doa Atas Persembahan', type: 'static', titleCode: 'A018', textCode: 'B018', defaultTitle: '(umat berdiri) DOA ATAS PERSEMBAHAN', autoText: 'amin' },
-  { id: 'laguKomuni', label: 'Lagu Komuni', type: 'dynamic', titleCode: 'A019', textCode: 'B019', imageCode: 'C019', defaultTitle: '(umat duduk) MADAH PUJIAN', interleaveType: 'empty', itemLabel: 'Lagu Komuni' },
-  { id: 'doaSesudahKomuni', label: 'Doa Sesudah Komuni', type: 'static', titleCode: 'A020', textCode: 'B020', defaultTitle: '(umat berdiri) DOA SESUDAH KOMUNI', autoText: 'amin' },
-  { id: 'laguPenutup', label: 'Lagu Penutup', type: 'dynamic', titleCode: 'A021', textCode: 'B021', imageCode: 'C021', defaultTitle: '(umat berdiri) NYANYIAN PERARAKAN KELUAR', interleaveType: 'empty', itemLabel: 'Lagu Penutup' }
+  { id: 'laguPembuka', label: 'Lagu Pembuka', type: 'dynamic', titleCode: 'A01', textCode: 'B01', imageCode: 'C01', defaultTitleId: '(umat berdiri) NYANYIAN PERARAKAN MASUK', defaultTitleJv: '(umat jumeneng) KIDUNG PAMBUKA', interleaveType: 'empty', itemLabel: 'Lagu Pembuka' },
+  { id: 'tuhanKasihanilah1', label: 'Tuhan Kasihanilah 1', type: 'static', titleCode: 'A02', textCode: 'B02', defaultTitleId: 'TUHAN KASIHANILAH KAMI', defaultTitleJv: 'GUSTI NYUWUN KAWELASAN' },
+  { id: 'tuhanKasihanilah2', label: 'Tuhan Kasihanilah 2', type: 'static', titleCode: 'A03', textCode: 'B03', defaultTitleId: 'TUHAN KASIHANILAH KAMI', defaultTitleJv: 'GUSTI NYUWUN KAWELASAN' },
+  { id: 'tuhanKasihanilah3', label: 'Tuhan Kasihanilah 3', type: 'static', titleCode: 'A04', textCode: 'B04', defaultTitleId: 'TUHAN KASIHANILAH KAMI', defaultTitleJv: 'GUSTI NYUWUN KAWELASAN' },
+  { id: 'doaKolekta', label: 'Doa Kolekta', type: 'static', titleCode: 'A05', textCode: 'B05', defaultTitleId: '(umat berdiri) DOA KOLEKTA', defaultTitleJv: '(umat jumeneng) SEMBAHYANGAN KOLEKTA', autoText: 'amin' },
+  { id: 'bacaan1', label: 'Bacaan 1', type: 'static', titleCode: 'A06', textCode: 'B06', defaultTitleId: '(umat duduk) BACAAN I | (Sumber)', defaultTitleJv: '(umat lenggah) WAOSAN I | (Sumber)' },
+  { id: 'mazmurRefren', label: 'Mazmur Tanggapan Refren', type: 'static', titleCode: 'A07', textCode: 'B07', imageCode: 'C07', defaultTitleId: '(umat duduk) MAZMUR TANGGAPAN', defaultTitleJv: '(umat lenggah) KIDUNG PANGLIMBANG' },
+  { id: 'mazmurAyat', label: 'Mazmur Tanggapan Ayat', type: 'dynamic', titleCode: 'A08', textCode: 'B08', imageCode: 'C08', defaultTitleId: '(umat duduk) MAZMUR TANGGAPAN', defaultTitleJv: '(umat lenggah) KIDUNG PANGLIMBANG', interleaveType: 'refren', itemLabel: 'Ayat' },
+  { id: 'bacaan2', label: 'Bacaan 2', type: 'static', titleCode: 'A09', textCode: 'B09', defaultTitleId: '(umat duduk) BACAAN II | (Sumber)', defaultTitleJv: '(umat lenggah) WAOSAN II | (Sumber)' },
+  { id: 'baitPengantarInjilRefren', label: 'Bait Pengantar Injil Refren', type: 'static', titleCode: 'A010', textCode: 'B010', imageCode: 'C010', defaultTitleId: '(umat berdiri) BAIT PENGANTAR INJIL', defaultTitleJv: '(umat jumeneng) KIDUNG CECELA' },
+  { id: 'baitPengantarInjilBait', label: 'Bait Pengantar Injil Bait', type: 'static', titleCode: 'A011', textCode: 'B011', imageCode: 'C011', defaultTitleId: '(umat berdiri) BAIT PENGANTAR INJIL', defaultTitleJv: '(umat jumeneng) KIDUNG CECELA' },
+  { id: 'bacaanInjil', label: 'Bacaan Injil', type: 'static', titleCode: 'A012', textCode: 'B012', defaultTitleId: '(umat berdiri) BACAAN INJIL | (Sumber)', defaultTitleJv: '(umat jumeneng) INJIL SUCI | (Sumber)' },
+  { id: 'doaUmatImam1', label: 'Doa Umat Imam 1', type: 'static', titleCode: 'A013', textCode: 'B013', defaultTitleId: '(umat berdiri) DOA UMAT', defaultTitleJv: '(umat jumeneng) SEMBAHYANGAN UMAT' },
+  { id: 'doaUmatLektor', label: 'Doa Umat Lektor', type: 'dynamic', titleCode: 'A014', textCode: 'B014', defaultTitleId: '(umat berdiri) DOA UMAT', defaultTitleJv: '(umat jumeneng) SEMBAHYANGAN UMAT', interleaveType: 'jawabanUmat', itemLabel: 'Lektor' },
+  { id: 'doaUmatJawabanUmat', label: 'Doa Umat Jawaban Umat', type: 'static', titleCode: 'A015', textCode: 'B015', defaultTitleId: '(umat berdiri) DOA UMAT', defaultTitleJv: '(umat jumeneng) SEMBAHYANGAN UMAT' },
+  { id: 'doaUmatImam2', label: 'Doa Umat Imam 2', type: 'static', titleCode: 'A016', textCode: 'B016', defaultTitleId: '(umat berdiri) DOA UMAT', defaultTitleJv: '(umat jumeneng) SEMBAHYANGAN UMAT' },
+  { id: 'laguPersembahan', label: 'Lagu Persembahan', type: 'dynamic', titleCode: 'A017', textCode: 'B017', imageCode: 'C017', defaultTitleId: '(umat duduk) NYANYIAN PERSEMBAHAN', defaultTitleJv: '(umat lenggah) KIDUNG PISUNGSUNG', interleaveType: 'empty', itemLabel: 'Lagu Persembahan' },
+  { id: 'doaAtasPersembahan', label: 'Doa Atas Persembahan', type: 'static', titleCode: 'A018', textCode: 'B018', defaultTitleId: '(umat berdiri) DOA ATAS PERSEMBAHAN', defaultTitleJv: '(umat jumeneng) SEMBAHYANGAN PISUNGSUNG', autoText: 'amin' },
+  { id: 'laguKomuni', label: 'Lagu Komuni', type: 'dynamic', titleCode: 'A019', textCode: 'B019', imageCode: 'C019', defaultTitleId: '(umat duduk) MADAH PUJIAN', defaultTitleJv: '(umat lenggah) KIDUNG IRINGAN KOMUNI', interleaveType: 'empty', itemLabel: 'Lagu Komuni' },
+  { id: 'doaSesudahKomuni', label: 'Doa Sesudah Komuni', type: 'static', titleCode: 'A020', textCode: 'B020', defaultTitleId: '(umat berdiri) DOA SESUDAH KOMUNI', defaultTitleJv: '(umat jumeneng) SEMBAHYANGAN BAKDA KOMUNI', autoText: 'amin' },
+  { id: 'laguPenutup', label: 'Lagu Penutup', type: 'dynamic', titleCode: 'A021', textCode: 'B021', imageCode: 'C021', defaultTitleId: '(umat berdiri) NYANYIAN PERARAKAN KELUAR', defaultTitleJv: '(umat jumeneng) KIDUNG PANUTUP', interleaveType: 'empty', itemLabel: 'Lagu Penutup' }
 ];
 
 export default function App() {
@@ -46,19 +47,13 @@ export default function App() {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   const [language, setLanguage] = useState('bahasa indonesia');
   const [massType, setMassType] = useState('mass');
   const [outputFileName, setOutputFileName] = useState('');
 
-  const [massDynamicFields, setMassDynamicFields] = useState<Record<string, any[]>>({
-    laguPembuka: [{ title: '(umat berdiri) NYANYIAN PERARAKAN MASUK', text: '', images: [] }],
-    mazmurAyat: [{ title: '(umat duduk) MAZMUR TANGGAPAN', text: '', images: [] }],
-    doaUmatLektor: [{ title: '(umat berdiri) DOA UMAT', text: '' }],
-    laguPersembahan: [{ title: '(umat duduk) NYANYIAN PERSEMBAHAN', text: '', images: [] }],
-    laguKomuni: [{ title: '(umat duduk) MADAH PUJIAN', text: '', images: [] }],
-    laguPenutup: [{ title: '(umat berdiri) NYANYIAN PERARAKAN KELUAR', text: '', images: [] }]
-  });
+  const [massDynamicFields, setMassDynamicFields] = useState<Record<string, any[]>>({});
 
   useEffect(() => {
     if (massType === 'mass') {
@@ -68,7 +63,10 @@ export default function App() {
         MASS_FIELDS.forEach(field => {
           if (field.type === 'static') {
             if (!newData[field.titleCode!]) {
-              newData[field.titleCode!] = field.defaultTitle;
+              newData[field.titleCode!] = language === 'bahasa jawa' ? field.defaultTitleJv : field.defaultTitleId;
+              changed = true;
+            } else if (newData[field.titleCode!] === field.defaultTitleId || newData[field.titleCode!] === field.defaultTitleJv) {
+              newData[field.titleCode!] = language === 'bahasa jawa' ? field.defaultTitleJv : field.defaultTitleId;
               changed = true;
             }
           }
@@ -81,8 +79,17 @@ export default function App() {
         let changed = false;
         MASS_FIELDS.forEach(field => {
           if (field.type === 'dynamic') {
+            const defaultTitle = language === 'bahasa jawa' ? field.defaultTitleJv : field.defaultTitleId;
             if (!newDynamic[field.id] || newDynamic[field.id].length === 0) {
-              newDynamic[field.id] = [{ title: field.defaultTitle, text: '', images: [] }];
+              newDynamic[field.id] = [{ title: defaultTitle, text: '', images: [] }];
+              changed = true;
+            } else {
+              newDynamic[field.id] = newDynamic[field.id].map((item: any) => {
+                if (item.title === field.defaultTitleId || item.title === field.defaultTitleJv) {
+                  return { ...item, title: defaultTitle };
+                }
+                return item;
+              });
               changed = true;
             }
           }
@@ -318,11 +325,14 @@ export default function App() {
     });
   };
 
-  const addDynamicItem = (fieldId: string, defaultTitle: string) => {
-    setMassDynamicFields(prev => ({
-      ...prev,
-      [fieldId]: [...(prev[fieldId] || []), { title: defaultTitle, text: '', image: '' }]
-    }));
+  const addDynamicItem = (fieldId: string, defaultTitleId: string, defaultTitleJv: string) => {
+    setMassDynamicFields(prev => {
+      const defaultTitle = language === 'bahasa jawa' ? defaultTitleJv : defaultTitleId;
+      return {
+        ...prev,
+        [fieldId]: [...(prev[fieldId] || []), { title: defaultTitle, text: '', images: [] }]
+      };
+    });
   };
 
   const removeDynamicItem = (fieldId: string, index: number) => {
@@ -342,88 +352,58 @@ export default function App() {
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
   const steps = [
-    { id: 1, name: 'Upload PPT' },
+    { id: 1, name: 'Upload' },
     { id: 2, name: 'Setup' },
-    { id: 3, name: 'Input Texts' },
-    { id: 4, name: 'Generate' }
+    { id: 3, name: 'Workspace' },
+    { id: 4, name: 'Download' }
   ];
 
   return (
-    <div className="min-h-screen bg-[#faf9f8] text-[#323130] font-sans flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen font-sans flex flex-col items-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-4xl space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-semibold tracking-tight text-[#323130]">
-            PPTX Generator
+        <div className="text-center retro-box p-6 bg-retro-bg relative">
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="absolute top-4 right-4 retro-button p-2 text-retro-text"
+            title="Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+          <h1 className="text-4xl font-bold tracking-tight uppercase" style={{ fontFamily: 'VT323, monospace' }}>
+            OTOMATEKS
           </h1>
-          <p className="mt-2 text-base text-[#605e5c]">
-            Follow the steps to generate your presentation.
+          <p className="mt-2 text-base font-bold">
+            v2.3 - Stable
           </p>
         </div>
 
-        {/* Stepper */}
-        <nav aria-label="Progress">
-          <ol role="list" className="flex items-center justify-center space-x-4 sm:space-x-8">
-            {steps.map((step, stepIdx) => (
-              <li key={step.name} className="relative flex items-center">
-                <div className="flex items-center">
-                  <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                      currentStep > step.id
-                        ? 'bg-[#0f6cbd] text-white'
-                        : currentStep === step.id
-                        ? 'border-2 border-[#0f6cbd] text-[#0f6cbd]'
-                        : 'border-2 border-[#edebe9] text-[#605e5c]'
-                    }`}
-                  >
-                    {currentStep > step.id ? (
-                      <Check className="h-5 w-5" aria-hidden="true" />
-                    ) : (
-                      <span className="text-sm font-medium">{step.id}</span>
-                    )}
-                  </span>
-                  <span
-                    className={`ml-3 text-sm font-medium hidden sm:block ${
-                      currentStep >= step.id ? 'text-[#0f6cbd]' : 'text-[#605e5c]'
-                    }`}
-                  >
-                    {step.name}
-                  </span>
-                </div>
-                {stepIdx !== steps.length - 1 ? (
-                  <div className="hidden sm:block absolute top-4 left-full w-full -ml-2 mt-[-1px] h-0.5 bg-[#edebe9]" style={{ width: '2rem' }} />
-                ) : null}
-              </li>
-            ))}
-          </ol>
-        </nav>
-
-        <div className="flex flex-col min-h-[400px]">
+        <div className="flex flex-col min-h-[400px] retro-box p-6 bg-retro-bg">
           <div className="flex-grow space-y-6">
             
             {/* Step 1: Upload PPT */}
             {currentStep === 1 && (
               <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-xl font-semibold text-[#323130]">Step 1: Upload PPTX Template</h2>
-                <p className="text-sm text-[#605e5c]">Select a PowerPoint file containing placeholders.</p>
+                <h2 className="text-2xl font-bold uppercase" style={{ fontFamily: 'VT323, monospace' }}>1. UPLOAD</h2>
+                <p className="text-sm font-bold">Select a Master PowerPoint file.</p>
                 
-                <div className="mt-4 flex justify-center rounded-lg border border-dashed border-[#8a8886] px-6 py-10 hover:bg-[#f3f2f1] transition-colors">
+                <div className="mt-4 flex justify-center retro-box-inset px-6 py-10 hover:bg-retro-box-dark transition-colors">
                   <div className="text-center">
-                    <FileUp className="mx-auto h-12 w-12 text-[#8a8886]" aria-hidden="true" />
-                    <div className="mt-4 flex text-sm leading-6 text-[#605e5c] justify-center">
+                    <FileUp className="mx-auto h-12 w-12 text-retro-text" aria-hidden="true" />
+                    <div className="mt-4 flex text-sm leading-6 justify-center font-bold">
                       <label
                         htmlFor="file-upload"
-                        className="relative cursor-pointer rounded-md bg-transparent font-semibold text-[#0f6cbd] focus-within:outline-none focus-within:ring-2 focus-within:ring-[#0f6cbd] focus-within:ring-offset-2 hover:text-[#115ea3]"
+                        className="relative cursor-pointer bg-transparent text-retro-accent hover:text-retro-accent-hover underline decoration-2 underline-offset-2"
                       >
                         <span>Upload a file</span>
                         <input id="file-upload" name="file-upload" type="file" accept=".pptx" className="sr-only" onChange={handleFileUpload} />
                       </label>
                       <p className="pl-1">or drag and drop</p>
                     </div>
-                    <p className="text-xs leading-5 text-[#605e5c]">PPTX up to 10MB</p>
+                    <p className="text-xs leading-5 font-bold mt-2">PPTX up to 10MB</p>
                     {templateFile && (
-                      <div className="mt-4 p-3 bg-[#f3f2f1] rounded-md border border-[#edebe9] flex items-center justify-center gap-2">
-                        <Check className="w-4 h-4 text-[#0f6cbd]" />
-                        <span className="text-sm font-medium text-[#323130]">
+                      <div className="mt-4 p-3 retro-box flex items-center justify-center gap-2 bg-retro-box-light">
+                        <Check className="w-4 h-4 text-retro-accent" />
+                        <span className="text-sm font-bold">
                           {templateFile.name}
                         </span>
                       </div>
@@ -431,8 +411,8 @@ export default function App() {
                   </div>
                 </div>
                 {isExtracting && (
-                  <div className="text-center py-4 text-[#605e5c] flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-[#0f6cbd] border-t-transparent rounded-full animate-spin" />
+                  <div className="text-center py-4 font-bold flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-retro-border border-t-transparent rounded-full animate-spin" />
                     Extracting placeholders...
                   </div>
                 )}
@@ -442,66 +422,62 @@ export default function App() {
             {/* Step 2: Setup */}
             {currentStep === 2 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-xl font-semibold text-[#323130]">Step 2: Setup Configuration</h2>
-                <p className="text-sm text-[#605e5c]">Configure language and mass type settings.</p>
+                <h2 className="text-2xl font-bold uppercase" style={{ fontFamily: 'VT323, monospace' }}>2. SETUP</h2>
+                <p className="text-sm font-bold">Default setting for the Generated PPTx.</p>
                 
                 <div className="space-y-5">
                   <div>
-                    <label className="text-base font-medium text-[#323130]">Language</label>
-                    <p className="text-sm text-[#605e5c] mb-3">Select the language for the presentation.</p>
-                    <div className="grid grid-cols-2 gap-4">
+                    <label className="text-base font-bold uppercase">Language</label>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
                       <button
                         type="button"
                         onClick={() => setLanguage('bahasa indonesia')}
-                        className={`p-4 rounded-lg border text-left transition-all ${
+                        className={`p-4 text-left transition-all ${
                           language === 'bahasa indonesia' 
-                            ? 'border-[#0f6cbd] bg-[#f3f2f1] shadow-sm' 
-                            : 'border-[#edebe9] hover:border-[#8a8886] hover:bg-[#faf9f8]'
+                            ? 'retro-box bg-retro-box-light' 
+                            : 'retro-button'
                         }`}
                       >
-                        <div className="font-medium text-[#323130]">Bahasa Indonesia</div>
+                        <div className="font-bold uppercase">Bahasa Indonesia</div>
                       </button>
                       <button
                         type="button"
                         onClick={() => setLanguage('bahasa jawa')}
-                        className={`p-4 rounded-lg border text-left transition-all ${
+                        className={`p-4 text-left transition-all ${
                           language === 'bahasa jawa' 
-                            ? 'border-[#0f6cbd] bg-[#f3f2f1] shadow-sm' 
-                            : 'border-[#edebe9] hover:border-[#8a8886] hover:bg-[#faf9f8]'
+                            ? 'retro-box bg-retro-box-light' 
+                            : 'retro-button'
                         }`}
                       >
-                        <div className="font-medium text-[#323130]">Bahasa Jawa</div>
+                        <div className="font-bold uppercase">Bahasa Jawa</div>
                       </button>
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-[#edebe9]">
-                    <label className="text-base font-medium text-[#323130]">Mass Type</label>
-                    <p className="text-sm text-[#605e5c] mb-3">Choose how data will be populated.</p>
-                    <div className="grid grid-cols-2 gap-4">
+                  <div className="pt-4 border-t-2 border-retro-border border-dashed">
+                    <label className="text-base font-bold uppercase">TYPE</label>
+                    <div className="grid grid-cols-2 gap-4 mt-3">
                       <button
                         type="button"
                         onClick={() => setMassType('mass')}
-                        className={`p-4 rounded-lg border text-left transition-all ${
+                        className={`p-4 text-left transition-all ${
                           massType === 'mass' 
-                            ? 'border-[#0f6cbd] bg-[#f3f2f1] shadow-sm' 
-                            : 'border-[#edebe9] hover:border-[#8a8886] hover:bg-[#faf9f8]'
+                            ? 'retro-box bg-retro-box-light' 
+                            : 'retro-button'
                         }`}
                       >
-                        <div className="font-medium text-[#323130]">Mass</div>
-                        <div className="text-sm text-[#605e5c] mt-1">Generate multiple slides from data</div>
+                        <div className="font-bold uppercase">Mass</div>
                       </button>
                       <button
                         type="button"
                         onClick={() => setMassType('custom')}
-                        className={`p-4 rounded-lg border text-left transition-all ${
+                        className={`p-4 text-left transition-all ${
                           massType === 'custom' 
-                            ? 'border-[#0f6cbd] bg-[#f3f2f1] shadow-sm' 
-                            : 'border-[#edebe9] hover:border-[#8a8886] hover:bg-[#faf9f8]'
+                            ? 'retro-box bg-retro-box-light' 
+                            : 'retro-button'
                         }`}
                       >
-                        <div className="font-medium text-[#323130]">Custom Field</div>
-                        <div className="text-sm text-[#605e5c] mt-1">Manually input specific fields</div>
+                        <div className="font-bold uppercase">Custom Field</div>
                       </button>
                     </div>
                   </div>
@@ -509,23 +485,23 @@ export default function App() {
               </div>
             )}
 
-            {/* Step 3: Input Texts */}
+            {/* Step 3: Workspace */}
             {currentStep === 3 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-xl font-semibold text-[#323130]">Step 3: Input Texts</h2>
-                <p className="text-sm text-[#605e5c]">Fill in the values for the extracted placeholders.</p>
+                <h2 className="text-2xl font-bold uppercase" style={{ fontFamily: 'VT323, monospace' }}>3. CONFIGURATION</h2>
+                <p className="text-sm font-bold">Start creating.</p>
                 
                 {massType === 'mass' ? (
-                  <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
                     {MASS_FIELDS.map((field) => (
-                      <div key={field.id} className="bg-white p-5 rounded-lg border border-[#edebe9] shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                          <h3 className="text-lg font-medium text-[#323130]">{field.label}</h3>
+                      <div key={field.id} className="retro-box p-5 bg-retro-box-light">
+                        <div className="flex items-center justify-between mb-4 border-b-2 border-retro-border pb-2">
+                          <h3 className="text-lg font-bold uppercase">{field.label}</h3>
                           {field.type === 'dynamic' && (
                             <button
                               type="button"
-                              onClick={() => addDynamicItem(field.id, field.defaultTitle)}
-                              className="inline-flex items-center gap-1 text-sm font-medium text-[#0f6cbd] hover:text-[#115ea3]"
+                              onClick={() => addDynamicItem(field.id, field.defaultTitleId!, field.defaultTitleJv!)}
+                              className="retro-button px-3 py-1 text-sm font-bold flex items-center gap-1"
                             >
                               <Plus className="w-4 h-4" />
                               Add More
@@ -537,10 +513,10 @@ export default function App() {
                           <div className="space-y-4">
                             {field.titleCode && (
                               <div>
-                                <label className="block text-sm font-medium text-[#605e5c] mb-1">Title {`{${field.titleCode}}`}</label>
+                                <label className="block text-sm font-bold mb-1 uppercase">Title</label>
                                 <input
                                   type="text"
-                                  className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm outline-none transition-all"
+                                  className="block w-full retro-box-inset py-2 px-3 text-retro-text focus:outline-none focus:ring-2 focus:ring-retro-border sm:text-sm"
                                   value={formData[field.titleCode] || ''}
                                   onChange={(e) => handleInputChange(field.titleCode!, e.target.value)}
                                 />
@@ -549,11 +525,11 @@ export default function App() {
                             {field.textCode && (
                               <div>
                                 <div className="flex items-center justify-between mb-1">
-                                  <label className="block text-sm font-medium text-[#605e5c]">Text {`{${field.textCode}}`}</label>
+                                  <label className="block text-sm font-bold uppercase">Text</label>
                                   <button
                                     type="button"
                                     onClick={() => handleInputChange(field.textCode!, handleParagraphify(formData[field.textCode!] || ''))}
-                                    className="p-1 text-[#605e5c] hover:text-[#0f6cbd] hover:bg-[#f3f2f1] rounded-md transition-colors"
+                                    className="retro-button p-1"
                                     title="Format as single paragraph"
                                   >
                                     <AlignLeft className="w-4 h-4" />
@@ -561,7 +537,7 @@ export default function App() {
                                 </div>
                                 <textarea
                                   rows={4}
-                                  className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm resize-none outline-none transition-all"
+                                  className="block w-full retro-box-inset py-2 px-3 text-retro-text focus:outline-none focus:ring-2 focus:ring-retro-border sm:text-sm resize-none"
                                   value={formData[field.textCode] || ''}
                                   onChange={(e) => handleInputChange(field.textCode!, e.target.value)}
                                 />
@@ -569,7 +545,7 @@ export default function App() {
                             )}
                             {field.imageCode && (
                               <div>
-                                <label className="block text-sm font-medium text-[#605e5c] mb-1">Image {`{${field.imageCode}}`}</label>
+                                <label className="block text-sm font-bold mb-1 uppercase">Image</label>
                                 <ImageUploadList 
                                   images={formData[field.imageCode] || []} 
                                   onChange={(imgs) => handleInputChange(field.imageCode!, imgs)} 
@@ -580,16 +556,16 @@ export default function App() {
                         ) : (
                           <div className="space-y-6">
                             {massDynamicFields[field.id]?.map((item, index) => (
-                              <div key={index} className="relative pl-4 border-l-2 border-[#0f6cbd] space-y-4">
+                              <div key={index} className="relative pl-4 border-l-4 border-retro-border space-y-4">
                                 <div className="flex items-center justify-between">
-                                  <h4 className="text-sm font-semibold text-[#0f6cbd]">
+                                  <h4 className="text-sm font-bold uppercase bg-retro-text text-retro-bg px-2 py-1 inline-block">
                                     {field.itemLabel || field.label} {index + 1}
                                   </h4>
                                   {index > 0 && (
                                     <button
                                       type="button"
                                       onClick={() => removeDynamicItem(field.id, index)}
-                                      className="p-1.5 text-[#605e5c] hover:text-[#d13438] hover:bg-[#fde7e9] rounded-md transition-colors"
+                                      className="retro-button p-1.5 text-retro-accent"
                                     >
                                       <Trash2 className="w-4 h-4" />
                                     </button>
@@ -597,10 +573,10 @@ export default function App() {
                                 </div>
                                 {field.titleCode && (
                                   <div>
-                                    <label className="block text-sm font-medium text-[#605e5c] mb-1">Title {`{${field.titleCode}}`}</label>
+                                    <label className="block text-sm font-bold mb-1 uppercase">Title</label>
                                     <input
                                       type="text"
-                                      className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm outline-none transition-all"
+                                      className="block w-full retro-box-inset py-2 px-3 text-retro-text focus:outline-none focus:ring-2 focus:ring-retro-border sm:text-sm"
                                       value={item.title || ''}
                                       onChange={(e) => handleDynamicInputChange(field.id, index, 'title', e.target.value)}
                                     />
@@ -609,11 +585,11 @@ export default function App() {
                                 {field.textCode && (
                                   <div>
                                     <div className="flex items-center justify-between mb-1">
-                                      <label className="block text-sm font-medium text-[#605e5c]">Text {`{${field.textCode}}`}</label>
+                                      <label className="block text-sm font-bold uppercase">Text</label>
                                       <button
                                         type="button"
                                         onClick={() => handleDynamicInputChange(field.id, index, 'text', handleParagraphify(item.text || ''))}
-                                        className="p-1 text-[#605e5c] hover:text-[#0f6cbd] hover:bg-[#f3f2f1] rounded-md transition-colors"
+                                        className="retro-button p-1"
                                         title="Format as single paragraph"
                                       >
                                         <AlignLeft className="w-4 h-4" />
@@ -621,7 +597,7 @@ export default function App() {
                                     </div>
                                     <textarea
                                       rows={4}
-                                      className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm resize-none outline-none transition-all"
+                                      className="block w-full retro-box-inset py-2 px-3 text-retro-text focus:outline-none focus:ring-2 focus:ring-retro-border sm:text-sm resize-none"
                                       value={item.text || ''}
                                       onChange={(e) => handleDynamicInputChange(field.id, index, 'text', e.target.value)}
                                     />
@@ -629,7 +605,7 @@ export default function App() {
                                 )}
                                 {field.imageCode && (
                                   <div>
-                                    <label className="block text-sm font-medium text-[#605e5c] mb-1">Image {`{${field.imageCode}}`}</label>
+                                    <label className="block text-sm font-bold mb-1 uppercase">Image</label>
                                     <ImageUploadList 
                                       images={item.images || []} 
                                       onChange={(imgs) => handleDynamicInputChange(field.id, index, 'images', imgs)} 
@@ -644,7 +620,7 @@ export default function App() {
                     ))}
                   </div>
                 ) : placeholders.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 max-h-[400px] overflow-y-auto pr-2">
                     {placeholders.map((placeholder) => {
                       const typeCode = placeholder.substring(1);
                       const isTextArea = typeCode === '02';
@@ -653,8 +629,8 @@ export default function App() {
                       return (
                         <div key={placeholder} className={isTextArea ? "sm:col-span-2" : ""}>
                           <div className="flex items-center justify-between mb-1">
-                            <label htmlFor={placeholder} className="block text-sm font-medium text-[#605e5c]">
-                              {`{${placeholder}}`} - {
+                            <label htmlFor={placeholder} className="block text-sm font-bold uppercase">
+                              {
                                 typeCode === '01' ? 'Title' :
                                 typeCode === '02' ? 'Text Content' :
                                 typeCode === '03' ? 'Image' : 'Content'
@@ -664,7 +640,7 @@ export default function App() {
                               <button
                                 type="button"
                                 onClick={() => handleInputChange(placeholder, handleParagraphify(formData[placeholder] || ''))}
-                                className="p-1 text-[#605e5c] hover:text-[#0f6cbd] hover:bg-[#f3f2f1] rounded-md transition-colors"
+                                className="retro-button p-1"
                                 title="Format as single paragraph"
                               >
                                 <AlignLeft className="w-4 h-4" />
@@ -681,7 +657,7 @@ export default function App() {
                               <textarea
                                 id={placeholder}
                                 rows={4}
-                                className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm resize-none outline-none transition-all"
+                                className="block w-full retro-box-inset py-2 px-3 text-retro-text focus:outline-none focus:ring-2 focus:ring-retro-border sm:text-sm resize-none"
                                 value={formData[placeholder] || ''}
                                 onChange={(e) => handleInputChange(placeholder, e.target.value)}
                                 placeholder={`Enter text for {${placeholder}}...`}
@@ -690,7 +666,7 @@ export default function App() {
                               <input
                                 type="text"
                                 id={placeholder}
-                                className="block w-full rounded-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm outline-none transition-all"
+                                className="block w-full retro-box-inset py-2 px-3 text-retro-text focus:outline-none focus:ring-2 focus:ring-retro-border sm:text-sm"
                                 value={formData[placeholder] || ''}
                                 onChange={(e) => handleInputChange(placeholder, e.target.value)}
                                 placeholder={`Enter value for {${placeholder}}...`}
@@ -702,48 +678,47 @@ export default function App() {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-12 bg-[#faf9f8] rounded-lg border border-[#edebe9]">
-                    <p className="text-[#605e5c]">No placeholders found in the uploaded template.</p>
-                    <p className="text-sm text-[#8a8886] mt-1">Ensure your PPTX has text like {'{A01}'}</p>
+                  <div className="text-center py-12 retro-box bg-retro-box-light">
+                    <p className="font-bold">No placeholders found in the uploaded template.</p>
+                    <p className="text-sm mt-1">Ensure your PPTX has text like {'{A01}'}</p>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Step 4: Generate */}
+            {/* Step 4: Download */}
             {currentStep === 4 && (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h2 className="text-xl font-semibold text-[#323130]">Step 4: Generate PPTX</h2>
-                <p className="text-sm text-[#605e5c]">Set the file name and download your presentation.</p>
+                <h2 className="text-2xl font-bold uppercase" style={{ fontFamily: 'VT323, monospace' }}>4. DOWNLOAD</h2>
+                <p className="text-sm font-bold">Pick a name and your work is done. Thank you.</p>
                 
-                <div className="space-y-4 max-w-md">
+                <div className="space-y-4 w-full">
                   <div>
-                    <label htmlFor="filename" className="block text-sm font-medium text-[#605e5c] mb-1">
+                    <label htmlFor="filename" className="block text-sm font-bold mb-1 uppercase">
                       Output File Name
                     </label>
-                    <div className="mt-1 flex rounded-md shadow-sm">
+                    <div className="mt-1 flex">
                       <input
                         type="text"
                         name="filename"
                         id="filename"
-                        className="block w-full min-w-0 flex-1 rounded-none rounded-l-md border border-[#8a8886] py-2 px-3 text-[#323130] focus:border-[#0f6cbd] focus:ring-1 focus:ring-[#0f6cbd] sm:text-sm outline-none transition-all"
+                        className="block w-full min-w-0 flex-1 retro-box-inset py-2 px-3 text-retro-text focus:outline-none focus:ring-2 focus:ring-retro-border sm:text-sm"
                         placeholder="My_Presentation"
                         value={outputFileName}
                         onChange={(e) => setOutputFileName(e.target.value)}
                       />
-                      <span className="inline-flex items-center rounded-r-md border border-l-0 border-[#8a8886] bg-[#f3f2f1] px-3 text-[#605e5c] sm:text-sm">
+                      <span className="inline-flex items-center retro-box bg-retro-box-dark px-3 font-bold sm:text-sm border-l-0">
                         .pptx
                       </span>
                     </div>
                   </div>
 
-                  <div className="bg-[#faf9f8] p-4 rounded-lg border border-[#edebe9] mt-6 space-y-2">
-                    <h4 className="text-sm font-medium text-[#323130]">Summary</h4>
-                    <ul className="text-sm text-[#605e5c] space-y-1">
-                      <li>• Template: <span className="font-medium text-[#323130]">{templateFile?.name || 'None'}</span></li>
-                      <li>• Language: <span className="font-medium text-[#323130] capitalize">{language}</span></li>
-                      <li>• Mass Type: <span className="font-medium text-[#323130] capitalize">{massType}</span></li>
-                      <li>• Placeholders Filled: <span className="font-medium text-[#323130]">{(Object.values(formData) as string[]).filter(v => typeof v === 'string' && v.trim() !== '').length} / {placeholders.length}</span></li>
+                  <div className="retro-box bg-retro-box-light p-4 mt-6 space-y-2">
+                    <h4 className="text-sm font-bold uppercase border-b-2 border-retro-border pb-1">Summary</h4>
+                    <ul className="text-sm font-bold space-y-1 mt-2">
+                      <li>&gt; Template: <span className="text-retro-accent">{templateFile?.name || 'None'}</span></li>
+                      <li>&gt; Language: <span className="text-retro-accent capitalize">{language}</span></li>
+                      <li>&gt; Type: <span className="text-retro-accent capitalize">{massType}</span></li>
                     </ul>
                   </div>
                 </div>
@@ -752,34 +727,32 @@ export default function App() {
           </div>
 
           {/* Navigation Buttons */}
-          <div className="pt-6 mt-6 flex items-center justify-between border-t border-[#edebe9]">
+          <div className="pt-6 mt-6 flex items-center justify-between border-t-2 border-retro-border border-dashed">
             <button
               onClick={prevStep}
               disabled={currentStep === 1}
-              className="inline-flex items-center gap-2 rounded-md bg-white px-4 py-2 text-sm font-semibold text-[#323130] border border-[#8a8886] hover:bg-[#f3f2f1] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="retro-button inline-flex items-center justify-center p-2 text-sm font-bold uppercase"
             >
-              <ChevronLeft className="w-4 h-4" />
-              Back
+              <ChevronLeft className="w-6 h-6" />
             </button>
             
             {currentStep < 4 ? (
               <button
                 onClick={nextStep}
                 disabled={(currentStep === 1 && (!templateFile || isExtracting))}
-                className="inline-flex items-center gap-2 rounded-md bg-[#0f6cbd] px-6 py-2 text-sm font-semibold text-white hover:bg-[#115ea3] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="retro-button retro-button-primary inline-flex items-center justify-center p-2 text-sm font-bold uppercase"
               >
-                Next
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-6 h-6" />
               </button>
             ) : (
               <button
                 onClick={handleGenerate}
                 disabled={!templateFile || isGenerating}
-                className="inline-flex items-center gap-2 rounded-md bg-[#0f6cbd] px-6 py-2 text-sm font-semibold text-white hover:bg-[#115ea3] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                className="retro-button retro-button-primary inline-flex items-center gap-2 px-6 py-2 text-sm font-bold uppercase"
               >
                 {isGenerating ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Generating...
                   </>
                 ) : (
@@ -792,7 +765,16 @@ export default function App() {
             )}
           </div>
         </div>
+        
+        <div className="text-center font-bold text-sm mt-8 pb-8">
+          @reallyratt
+        </div>
       </div>
+
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <SettingsModal onClose={() => setIsSettingsOpen(false)} />
+      )}
     </div>
   );
 }

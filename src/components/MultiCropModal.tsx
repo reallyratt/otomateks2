@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Rnd } from 'react-rnd';
-import { X, Plus, Layers, Save } from 'lucide-react';
+import { X, Plus, Layers, Save, Trash2 } from 'lucide-react';
 import { ImageItem } from './ImageUploadList';
 
 interface Box {
@@ -159,55 +159,52 @@ export const MultiCropModal: React.FC<MultiCropModalProps> = ({ image, onSave, o
           display: none;
         }
       `}</style>
-      <div className="bg-white rounded-lg shadow-xl w-[90vw] max-w-5xl h-[90vh] flex flex-col overflow-hidden">
+      <div className="retro-box bg-retro-bg w-[90vw] max-w-5xl h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-800">Multi Crop</h2>
-          <button onClick={onCancel} className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors">
-            <X className="w-5 h-5" />
-          </button>
+        <div className="flex items-center justify-between px-6 py-4 border-b-2 border-retro-border bg-retro-box-light">
+          <h2 className="text-2xl font-bold uppercase" style={{ fontFamily: 'VT323, monospace' }}>MULTI-CROP</h2>
         </div>
 
         {/* Content */}
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
-          <div className="w-64 border-r border-gray-200 bg-gray-50 flex flex-col">
-            <div className="p-4 border-b border-gray-200">
+          <div className="w-64 border-r-2 border-retro-border bg-retro-box-dark flex flex-col">
+            <div className="p-4 border-b-2 border-retro-border">
               <button 
                 onClick={handleAddSlide}
-                className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="retro-button w-full flex items-center justify-center gap-2 py-2 px-4 text-sm font-bold uppercase"
               >
                 <Layers className="w-4 h-4" />
                 Add Slide
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-1 hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="flex-1 overflow-y-auto p-2 space-y-2 hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {slides.map((slide, index) => (
                 <button
                   key={slide.id}
                   onClick={() => setActiveSlideId(slide.id)}
-                  className={`w-full text-left px-4 py-3 rounded-md text-sm font-medium transition-colors flex justify-between items-center ${
+                  className={`w-full text-left px-4 py-3 text-sm font-bold uppercase flex justify-between items-center transition-all ${
                     activeSlideId === slide.id 
-                      ? 'bg-blue-100 text-blue-700' 
-                      : 'text-gray-600 hover:bg-gray-200'
+                      ? 'retro-box bg-retro-box-light' 
+                      : 'retro-button'
                   }`}
                 >
                   <span>Slide {index + 1}</span>
-                  <span className="bg-white/50 px-2 py-0.5 rounded-full text-xs">{slide.boxes.length} boxes</span>
+                  <span className="bg-retro-text text-retro-bg px-2 py-0.5 text-xs">{slide.boxes.length} boxes</span>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Main Workspace */}
-          <div className="flex-1 flex flex-col bg-gray-100 relative overflow-hidden">
-            <div className="p-4 flex justify-between items-center bg-white border-b border-gray-200 shadow-sm z-10">
-              <div className="text-sm font-medium text-gray-600">
+          <div className="flex-1 flex flex-col bg-retro-bg relative overflow-hidden">
+            <div className="p-4 flex justify-between items-center bg-retro-box-light border-b-2 border-retro-border z-10">
+              <div className="text-sm font-bold uppercase">
                 Editing Slide {activeSlideIndex + 1}
               </div>
               <button 
                 onClick={handleAddBox}
-                className="flex items-center gap-2 py-1.5 px-3 bg-[#0f6cbd] text-white rounded-md text-sm font-medium hover:bg-[#0c5696] transition-colors"
+                className="retro-button retro-button-primary flex items-center gap-2 py-1.5 px-3 text-sm font-bold uppercase"
               >
                 <Plus className="w-4 h-4" />
                 Add Box
@@ -215,7 +212,7 @@ export const MultiCropModal: React.FC<MultiCropModalProps> = ({ image, onSave, o
             </div>
 
             <div className="flex-1 overflow-auto p-8 flex justify-center hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              <div className="relative shadow-lg bg-white h-max" style={{ maxWidth: '100%' }}>
+              <div className="relative retro-box bg-retro-box-light h-max" style={{ maxWidth: '100%' }}>
                 <img 
                   ref={imageRef}
                   src={image.url} 
@@ -251,14 +248,14 @@ export const MultiCropModal: React.FC<MultiCropModalProps> = ({ image, onSave, o
                         y: (position.y / imageRect.height) * 100
                       });
                     }}
-                    className="border-2 border-blue-500 bg-blue-500/20 group"
+                    className="border-2 border-retro-accent bg-retro-accent/20 group"
                   >
-                    <div className="absolute top-0 left-0 bg-blue-500 text-white text-xs px-1.5 py-0.5 font-bold">
+                    <div className="absolute top-0 left-0 bg-retro-accent text-white text-xs px-1.5 py-0.5 font-bold">
                       {index + 1}
                     </div>
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleDeleteBox(box.id); }}
-                      className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-red-600"
+                      className="absolute -top-3 -right-3 bg-retro-text text-retro-bg p-1 opacity-0 group-hover:opacity-100 transition-opacity border-2 border-retro-box-light"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -270,19 +267,20 @@ export const MultiCropModal: React.FC<MultiCropModalProps> = ({ image, onSave, o
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-end gap-3">
+        <div className="p-4 border-t-2 border-retro-border bg-retro-box-light flex justify-end gap-3">
           <button 
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            className="retro-button p-2 text-retro-accent"
+            title="Cancel"
           >
-            Cancel
+            <Trash2 className="w-5 h-5" />
           </button>
           <button 
             onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#0f6cbd] rounded-md hover:bg-[#0c5696] transition-colors"
+            className="retro-button retro-button-primary flex items-center gap-2 px-4 py-2 text-sm font-bold uppercase"
           >
             <Save className="w-4 h-4" />
-            Save Crops
+            Save
           </button>
         </div>
       </div>

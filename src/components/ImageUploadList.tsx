@@ -105,7 +105,7 @@ export const ImageUploadList: React.FC<ImageUploadListProps> = ({ images = [], o
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
-        <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 bg-[#f3f2f1] hover:bg-[#edebe9] text-[#323130] text-sm font-medium rounded-md border border-[#8a8886] transition-colors">
+        <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 retro-button text-sm font-bold uppercase">
           <Upload className="w-4 h-4" />
           Upload Images
           <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
@@ -114,34 +114,34 @@ export const ImageUploadList: React.FC<ImageUploadListProps> = ({ images = [], o
       {images.length > 0 && (
         <div className="space-y-2 mt-2">
           {images.map((img, idx) => (
-            <div key={img.id} className="flex items-center gap-3 p-2 border border-[#edebe9] rounded-md bg-white shadow-sm">
-              <div className="border rounded-md flex items-center bg-gray-50">
-                <button type="button" onClick={() => remove(idx)} className="p-1.5 text-red-500 hover:bg-red-100 rounded-md transition-colors" title="Delete">
+            <div key={img.id} className="flex items-center gap-3 p-2 retro-box bg-retro-box-light">
+              <div className="flex items-center">
+                <button type="button" onClick={() => remove(idx)} className="retro-button p-1.5 text-retro-accent" title="Delete">
                   <X className="w-4 h-4" />
                 </button>
               </div>
               
-              <img src={img.url} alt={img.name} className="w-10 h-10 object-cover rounded border border-[#edebe9]" />
-              <span className="flex-1 truncate text-sm text-[#323130]">{img.name}</span>
+              <img src={img.url} alt={img.name} className="w-10 h-10 object-cover retro-box-inset" />
+              <span className="flex-1 truncate text-sm font-bold">{img.name}</span>
               
               <div className="flex gap-2">
-                <div className="border rounded-md flex items-center bg-gray-50">
-                  <button type="button" onClick={() => setEditingIndex(idx)} className="p-1.5 text-[#0f6cbd] hover:bg-blue-100 rounded-md transition-colors" title="Multi Crop">
+                <div className="flex items-center">
+                  <button type="button" onClick={() => setEditingIndex(idx)} className="retro-button p-1.5 text-retro-text" title="Multi Crop">
                     <Edit2 className="w-4 h-4" />
                   </button>
                 </div>
                 
-                <div className="border rounded-md flex items-center bg-gray-50">
-                  <button type="button" onClick={() => invertColor(idx)} className="p-1.5 text-gray-700 hover:bg-gray-200 rounded-md transition-colors" title="Invert Color">
+                <div className="flex items-center">
+                  <button type="button" onClick={() => invertColor(idx)} className="retro-button p-1.5 text-retro-text" title="Invert Color">
                     <Contrast className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="border rounded-md flex items-center bg-gray-50">
-                  <button type="button" onClick={() => moveUp(idx)} disabled={idx === 0} className="p-1.5 text-gray-700 hover:bg-gray-200 rounded-l-md border-r border-gray-200 disabled:opacity-50 transition-colors" title="Move Up">
+                <div className="flex items-center space-x-1">
+                  <button type="button" onClick={() => moveUp(idx)} disabled={idx === 0} className="retro-button p-1.5 text-retro-text" title="Move Up">
                     <ArrowUp className="w-4 h-4" />
                   </button>
-                  <button type="button" onClick={() => moveDown(idx)} disabled={idx === images.length - 1} className="p-1.5 text-gray-700 hover:bg-gray-200 rounded-r-md disabled:opacity-50 transition-colors" title="Move Down">
+                  <button type="button" onClick={() => moveDown(idx)} disabled={idx === images.length - 1} className="retro-button p-1.5 text-retro-text" title="Move Down">
                     <ArrowDown className="w-4 h-4" />
                   </button>
                 </div>
