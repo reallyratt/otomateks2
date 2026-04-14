@@ -154,6 +154,11 @@ export const MultiCropModal: React.FC<MultiCropModalProps> = ({ image, onSave, o
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
       <div className="bg-white rounded-lg shadow-xl w-[90vw] max-w-5xl h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -176,7 +181,7 @@ export const MultiCropModal: React.FC<MultiCropModalProps> = ({ image, onSave, o
                 Add Slide
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            <div className="flex-1 overflow-y-auto p-2 space-y-1 hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
               {slides.map((slide, index) => (
                 <button
                   key={slide.id}
@@ -209,13 +214,13 @@ export const MultiCropModal: React.FC<MultiCropModalProps> = ({ image, onSave, o
               </button>
             </div>
 
-            <div className="flex-1 overflow-auto p-8 flex items-center justify-center">
-              <div className="relative shadow-lg bg-white" style={{ maxWidth: '100%', maxHeight: '100%' }}>
+            <div className="flex-1 overflow-auto p-8 flex justify-center hide-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+              <div className="relative shadow-lg bg-white h-max" style={{ maxWidth: '100%' }}>
                 <img 
                   ref={imageRef}
                   src={image.url} 
                   alt="Crop target" 
-                  className="max-w-full max-h-full block select-none"
+                  className="max-w-full h-auto block select-none"
                   onLoad={handleImageLoad}
                   draggable={false}
                 />
