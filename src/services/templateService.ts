@@ -196,6 +196,7 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
   const zip = new PizZip(new Uint8Array(arrayBuffer));
   
   const slideToPlaceholders = new Map<string, string[]>();
+  const shapeSizes: Record<string, {width: number, height: number}> = {};
 
   // Pre-process XML files to fix common typos and map placeholders to slides
   for (const [filename, fileData] of Object.entries(zip.files)) {
@@ -223,6 +224,52 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
         }
         if (phs.size > 0) {
           slideToPlaceholders.set(filename, Array.from(phs));
+        }
+
+        // Extract shape sizes for image placeholders and force center alignment
+        const spRegex = /<p:sp[\s>][\s\S]*?<\/p:sp>/g;
+        let spMatch;
+        while ((spMatch = spRegex.exec(xml)) !== null) {
+          const spXml = spMatch[0];
+          const rawSpText = spXml.replace(/<[^>]+>/g, '');
+          const phRegex = /\{([A-Z]\d{2,3})\}/g;
+          let phMatch;
+          let isImageShape = false;
+          while ((phMatch = phRegex.exec(rawSpText)) !== null) {
+            const ph = phMatch[1];
+            if (ph.startsWith('C')) {
+              isImageShape = true;
+              const extMatch = /<a:ext\s+cx="(\d+)"\s+cy="(\d+)"/.exec(spXml);
+              if (extMatch) {
+                const cx = parseInt(extMatch[1], 10);
+                const cy = parseInt(extMatch[2], 10);
+                shapeSizes[ph] = { width: Math.round(cx / 9525), height: Math.round(cy / 9525) };
+              }
+            }
+          }
+          
+          if (isImageShape) {
+            // Force vertical centering (anchor="ctr")
+            let newSpXml = spXml;
+            if (/<a:bodyPr[^>]*anchor="[^"]*"/.test(newSpXml)) {
+              newSpXml = newSpXml.replace(/(<a:bodyPr[^>]*anchor=")[^"]*(")/, '$1ctr$2');
+            } else if (/<a:bodyPr/.test(newSpXml)) {
+              newSpXml = newSpXml.replace(/<a:bodyPr/, '<a:bodyPr anchor="ctr"');
+            }
+            
+            // Force horizontal centering (algn="ctr")
+            if (/<a:pPr[^>]*algn="[^"]*"/.test(newSpXml)) {
+              newSpXml = newSpXml.replace(/(<a:pPr[^>]*algn=")[^"]*(")/g, '$1ctr$2');
+            } else if (/<a:pPr/.test(newSpXml)) {
+              newSpXml = newSpXml.replace(/<a:pPr/g, '<a:pPr algn="ctr"');
+            } else if (/<a:p>/.test(newSpXml)) {
+              newSpXml = newSpXml.replace(/<a:p>/g, '<a:p><a:pPr algn="ctr"/>');
+            }
+            
+            if (newSpXml !== spXml) {
+              xml = xml.replace(spXml, newSpXml);
+            }
+          }
         }
       }
     }
@@ -452,10 +499,20 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
     : (Docxtemplater as any).default || Docxtemplater;
 
   const opts = {
-    centered: false,
+    centered: true,
     getImage: function (tagValue: string) {
-      if (tagValue && tagValue.startsWith('data:image')) {
-        const base64Data = tagValue.split(',')[1];
+      if (!tagValue) return null;
+      let url = tagValue;
+      if (tagValue.startsWith('{')) {
+        try {
+          const data = JSON.parse(tagValue);
+          url = data.url;
+        } catch (e) {
+          // ignore
+        }
+      }
+      if (url && url.startsWith('data:image')) {
+        const base64Data = url.split(',')[1];
         const binaryString = window.atob(base64Data);
         const len = binaryString.length;
         const bytes = new Uint8Array(len);
@@ -467,7 +524,28 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
       return null;
     },
     getSize: function (img: any, tagValue: string, tagName: string) {
-      return [600, 400];
+      let maxWidth = 800;
+      let maxHeight = 500;
+      
+      // Try to get the exact shape size from the template
+      const basePh = tagName.split('_')[0];
+      if (shapeSizes[basePh]) {
+        maxWidth = shapeSizes[basePh].width;
+        maxHeight = shapeSizes[basePh].height;
+      }
+
+      if (tagValue && tagValue.startsWith('{')) {
+        try {
+          const data = JSON.parse(tagValue);
+          if (data.width && data.height) {
+            const ratio = Math.min(maxWidth / data.width, maxHeight / data.height);
+            return [Math.round(data.width * ratio), Math.round(data.height * ratio)];
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+      return [maxWidth, maxHeight];
     }
   };
   const imageModule = new ImageModule(opts);

@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { FileUp, FileDown, Settings, ChevronRight, ChevronLeft, Check, Plus, Trash2, AlignLeft } from 'lucide-react';
 import { extractTemplateLayout, generateFromTemplate } from './services/templateService';
 import { chunkText } from './utils/chunkText';
+import { ImageUploadList, ImageItem } from './components/ImageUploadList';
 
 const getAutoText = (type: string, lang: string) => {
   if (type === 'amin') return "\n\nAmin.";
@@ -42,7 +43,7 @@ export default function App() {
   
   const [templateFile, setTemplateFile] = useState<File | null>(null);
   const [placeholders, setPlaceholders] = useState<string[]>([]);
-  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [formData, setFormData] = useState<Record<string, any>>({});
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   
@@ -51,12 +52,12 @@ export default function App() {
   const [outputFileName, setOutputFileName] = useState('');
 
   const [massDynamicFields, setMassDynamicFields] = useState<Record<string, any[]>>({
-    laguPembuka: [{ title: '(umat berdiri) NYANYIAN PERARAKAN MASUK', text: '', image: '' }],
-    mazmurAyat: [{ title: '(umat duduk) MAZMUR TANGGAPAN', text: '', image: '' }],
+    laguPembuka: [{ title: '(umat berdiri) NYANYIAN PERARAKAN MASUK', text: '', images: [] }],
+    mazmurAyat: [{ title: '(umat duduk) MAZMUR TANGGAPAN', text: '', images: [] }],
     doaUmatLektor: [{ title: '(umat berdiri) DOA UMAT', text: '' }],
-    laguPersembahan: [{ title: '(umat duduk) NYANYIAN PERSEMBAHAN', text: '', image: '' }],
-    laguKomuni: [{ title: '(umat duduk) MADAH PUJIAN', text: '', image: '' }],
-    laguPenutup: [{ title: '(umat berdiri) NYANYIAN PERARAKAN KELUAR', text: '', image: '' }]
+    laguPersembahan: [{ title: '(umat duduk) NYANYIAN PERSEMBAHAN', text: '', images: [] }],
+    laguKomuni: [{ title: '(umat duduk) MADAH PUJIAN', text: '', images: [] }],
+    laguPenutup: [{ title: '(umat berdiri) NYANYIAN PERARAKAN KELUAR', text: '', images: [] }]
   });
 
   useEffect(() => {
@@ -81,7 +82,7 @@ export default function App() {
         MASS_FIELDS.forEach(field => {
           if (field.type === 'dynamic') {
             if (!newDynamic[field.id] || newDynamic[field.id].length === 0) {
-              newDynamic[field.id] = [{ title: field.defaultTitle, text: '', image: '' }];
+              newDynamic[field.id] = [{ title: field.defaultTitle, text: '', images: [] }];
               changed = true;
             }
           }
@@ -122,7 +123,7 @@ export default function App() {
     }
   };
 
-  const handleInputChange = (key: string, value: string) => {
+  const handleInputChange = (key: string, value: any) => {
     setFormData(prev => ({
       ...prev,
       [key]: value
@@ -144,7 +145,16 @@ export default function App() {
     
     setIsGenerating(true);
     try {
-      const finalData = { ...formData };
+      const finalData: Record<string, any> = {};
+      
+      // Pre-process formData to convert ImageItem arrays to JSON string arrays
+      Object.keys(formData).forEach(key => {
+        if (Array.isArray(formData[key])) {
+          finalData[key] = formData[key].map((img: any) => JSON.stringify(img));
+        } else {
+          finalData[key] = formData[key];
+        }
+      });
       
       if (massType === 'mass') {
         // Append auto text for static fields
@@ -164,7 +174,8 @@ export default function App() {
         const jawabanUmatText = finalData['B015'] || '';
         const refrenTitle = finalData['A07'] || '(umat duduk) MAZMUR TANGGAPAN';
         const refrenText = finalData['B07'] || '';
-        const refrenImage = finalData['C07'] || '';
+        const refrenImages = Array.isArray(finalData['C07']) ? finalData['C07'] : [finalData['C07']].filter(Boolean);
+        const refrenImage = refrenImages[0] || '';
         
         const slideOrderGroups: any[] = [];
 
@@ -179,13 +190,17 @@ export default function App() {
               items.forEach((item, index) => {
                 // Chunk the text for this item
                 const itemChunks = chunkText(item.text || '', 130);
-                if (itemChunks.length === 0) itemChunks.push('');
+                const itemImages = item.images || [];
+                const numChunks = Math.max(1, itemChunks.length, itemImages.length);
                 
-                itemChunks.forEach((chunk) => {
+                for (let i = 0; i < numChunks; i++) {
                   titles.push(item.title || '');
-                  texts.push(chunk);
-                  images.push(item.image || ''); // Repeat image for chunks of the same item
-                });
+                  texts.push(itemChunks[i] || itemChunks[0] || '');
+                  if (field.imageCode) {
+                    const img = itemImages[i] || itemImages[0];
+                    images.push(img ? JSON.stringify(img) : '');
+                  }
+                }
                 
                 // Add the separator for 'empty'
                 if (field.interleaveType === 'empty') {
@@ -233,13 +248,15 @@ export default function App() {
 
                 items.forEach((item) => {
                   const itemChunks = chunkText(item.text || '', 130);
-                  const numChunks = Math.max(1, itemChunks.length);
+                  const itemImages = item.images || [];
+                  const numChunks = Math.max(1, itemChunks.length, itemImages.length);
                   
                   // Add main chunks to slide order
                   for (let i = 0; i < numChunks; i++) {
                     const mainPhs = [];
                     if (field.textCode) mainPhs.push(`${field.textCode}_${mainChunkIndex}`);
                     if (field.titleCode) mainPhs.push(`${field.titleCode}_${mainChunkIndex}`);
+                    if (field.imageCode) mainPhs.push(`${field.imageCode}_${mainChunkIndex}`);
                     slideOrder.push(mainPhs);
                     mainChunkIndex++;
                   }
@@ -293,7 +310,7 @@ export default function App() {
     }
   };
 
-  const handleDynamicInputChange = (fieldId: string, index: number, key: string, value: string) => {
+  const handleDynamicInputChange = (fieldId: string, index: number, key: string, value: any) => {
     setMassDynamicFields(prev => {
       const newItems = [...prev[fieldId]];
       newItems[index] = { ...newItems[index], [key]: value };
@@ -553,20 +570,10 @@ export default function App() {
                             {field.imageCode && (
                               <div>
                                 <label className="block text-sm font-medium text-[#605e5c] mb-1">Image {`{${field.imageCode}}`}</label>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  className="block w-full text-sm text-[#605e5c] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#f3f2f1] file:text-[#0f6cbd] hover:file:bg-[#edebe9] transition-all"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      handleImageUpload(file, (base64) => handleInputChange(field.imageCode!, base64));
-                                    }
-                                  }}
+                                <ImageUploadList 
+                                  images={formData[field.imageCode] || []} 
+                                  onChange={(imgs) => handleInputChange(field.imageCode!, imgs)} 
                                 />
-                                {formData[field.imageCode] && (
-                                  <img src={formData[field.imageCode]} alt="Preview" className="mt-2 h-20 object-contain rounded-md border border-[#edebe9]" />
-                                )}
                               </div>
                             )}
                           </div>
@@ -623,20 +630,10 @@ export default function App() {
                                 {field.imageCode && (
                                   <div>
                                     <label className="block text-sm font-medium text-[#605e5c] mb-1">Image {`{${field.imageCode}}`}</label>
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      className="block w-full text-sm text-[#605e5c] file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#f3f2f1] file:text-[#0f6cbd] hover:file:bg-[#edebe9] transition-all"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                          handleImageUpload(file, (base64) => handleDynamicInputChange(field.id, index, 'image', base64));
-                                        }
-                                      }}
+                                    <ImageUploadList 
+                                      images={item.images || []} 
+                                      onChange={(imgs) => handleDynamicInputChange(field.id, index, 'images', imgs)} 
                                     />
-                                    {item.image && (
-                                      <img src={item.image} alt="Preview" className="mt-2 h-20 object-contain rounded-md border border-[#edebe9]" />
-                                    )}
                                   </div>
                                 )}
                               </div>
@@ -651,6 +648,7 @@ export default function App() {
                     {placeholders.map((placeholder) => {
                       const typeCode = placeholder.substring(1);
                       const isTextArea = typeCode === '02';
+                      const isImage = typeCode === '03';
                       
                       return (
                         <div key={placeholder} className={isTextArea ? "sm:col-span-2" : ""}>
@@ -659,7 +657,7 @@ export default function App() {
                               {`{${placeholder}}`} - {
                                 typeCode === '01' ? 'Title' :
                                 typeCode === '02' ? 'Text Content' :
-                                typeCode === '03' ? 'Image URL' : 'Content'
+                                typeCode === '03' ? 'Image' : 'Content'
                               }
                             </label>
                             {isTextArea && (
@@ -674,7 +672,12 @@ export default function App() {
                             )}
                           </div>
                           <div className="mt-1">
-                            {isTextArea ? (
+                            {isImage ? (
+                              <ImageUploadList 
+                                images={formData[placeholder] || []} 
+                                onChange={(imgs) => handleInputChange(placeholder, imgs)} 
+                              />
+                            ) : isTextArea ? (
                               <textarea
                                 id={placeholder}
                                 rows={4}
