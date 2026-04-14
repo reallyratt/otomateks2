@@ -4,11 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { FileUp, FileDown, Settings, ChevronRight, ChevronLeft, Check, Plus, Trash2, AlignLeft, X } from 'lucide-react';
+import { FileUp, FileDown, Settings, ChevronRight, ChevronLeft, Check, Plus, Trash2, AlignLeft, X, Type } from 'lucide-react';
 import { extractTemplateLayout, generateFromTemplate } from './services/templateService';
 import { chunkText } from './utils/chunkText';
 import { ImageUploadList, ImageItem } from './components/ImageUploadList';
 import { SettingsModal } from './components/SettingsModal';
+import { TextifyModal } from './components/TextifyModal';
 
 const getAutoText = (type: string, lang: string) => {
   if (type === 'amin') return "\n\nU: Amin";
@@ -48,6 +49,7 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [textifyTarget, setTextifyTarget] = useState<{ type: 'static' | 'custom', key: string } | { type: 'dynamic', fieldId: string, index: number } | null>(null);
   
   const [language, setLanguage] = useState('bahasa indonesia');
   const [massType, setMassType] = useState('mass');
@@ -348,6 +350,23 @@ export default function App() {
     return text.split('\n').map(line => line.trim()).filter(line => line.length > 0).join(' ');
   };
 
+  const handleTextifyInsert = (text: string) => {
+    if (!textifyTarget) return;
+    
+    if (textifyTarget.type === 'static' || textifyTarget.type === 'custom') {
+      const currentText = formData[textifyTarget.key] || '';
+      handleInputChange(textifyTarget.key, currentText ? currentText + '\n\n' + text : text);
+    } else if (textifyTarget.type === 'dynamic') {
+      const items = massDynamicFields[textifyTarget.fieldId];
+      if (items && items[textifyTarget.index]) {
+        const currentText = items[textifyTarget.index].text || '';
+        handleDynamicInputChange(textifyTarget.fieldId, textifyTarget.index, 'text', currentText ? currentText + '\n\n' + text : text);
+      }
+    }
+    
+    setTextifyTarget(null);
+  };
+
   const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 4));
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
@@ -377,8 +396,8 @@ export default function App() {
           </p>
         </div>
 
-        <div className="flex flex-col min-h-[400px] retro-box p-6 bg-retro-bg">
-          <div className="flex-grow space-y-6">
+        <div className="flex flex-col h-[600px] max-h-[75vh] retro-box p-6 bg-retro-bg">
+          <div className="flex-grow space-y-6 overflow-y-auto pr-2">
             
             {/* Step 1: Upload PPT */}
             {currentStep === 1 && (
@@ -492,7 +511,7 @@ export default function App() {
                 <p className="text-sm font-bold">Start creating.</p>
                 
                 {massType === 'mass' ? (
-                  <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2">
+                  <div className="space-y-6">
                     {MASS_FIELDS.map((field) => (
                       <div key={field.id} className="retro-box p-5 bg-retro-box-light">
                         <div className="flex items-center justify-between mb-4 border-b-2 border-retro-border pb-2">
@@ -526,14 +545,24 @@ export default function App() {
                               <div>
                                 <div className="flex items-center justify-between mb-1">
                                   <label className="block text-sm font-bold uppercase">Text</label>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleInputChange(field.textCode!, handleParagraphify(formData[field.textCode!] || ''))}
-                                    className="retro-button p-1"
-                                    title="Format as single paragraph"
-                                  >
-                                    <AlignLeft className="w-4 h-4" />
-                                  </button>
+                                  <div className="flex gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setTextifyTarget({ type: 'static', key: field.textCode! })}
+                                      className="retro-button p-1"
+                                      title="Image to Text"
+                                    >
+                                      <Type className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleInputChange(field.textCode!, handleParagraphify(formData[field.textCode!] || ''))}
+                                      className="retro-button p-1"
+                                      title="Format as single paragraph"
+                                    >
+                                      <AlignLeft className="w-4 h-4" />
+                                    </button>
+                                  </div>
                                 </div>
                                 <textarea
                                   rows={4}
@@ -586,14 +615,24 @@ export default function App() {
                                   <div>
                                     <div className="flex items-center justify-between mb-1">
                                       <label className="block text-sm font-bold uppercase">Text</label>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleDynamicInputChange(field.id, index, 'text', handleParagraphify(item.text || ''))}
-                                        className="retro-button p-1"
-                                        title="Format as single paragraph"
-                                      >
-                                        <AlignLeft className="w-4 h-4" />
-                                      </button>
+                                      <div className="flex gap-1">
+                                        <button
+                                          type="button"
+                                          onClick={() => setTextifyTarget({ type: 'dynamic', fieldId: field.id, index })}
+                                          className="retro-button p-1"
+                                          title="Image to Text"
+                                        >
+                                          <Type className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleDynamicInputChange(field.id, index, 'text', handleParagraphify(item.text || ''))}
+                                          className="retro-button p-1"
+                                          title="Format as single paragraph"
+                                        >
+                                          <AlignLeft className="w-4 h-4" />
+                                        </button>
+                                      </div>
                                     </div>
                                     <textarea
                                       rows={4}
@@ -620,7 +659,7 @@ export default function App() {
                     ))}
                   </div>
                 ) : placeholders.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 max-h-[400px] overflow-y-auto pr-2">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {placeholders.map((placeholder) => {
                       const typeCode = placeholder.substring(1);
                       const isTextArea = typeCode === '02';
@@ -637,14 +676,24 @@ export default function App() {
                               }
                             </label>
                             {isTextArea && (
-                              <button
-                                type="button"
-                                onClick={() => handleInputChange(placeholder, handleParagraphify(formData[placeholder] || ''))}
-                                className="retro-button p-1"
-                                title="Format as single paragraph"
-                              >
-                                <AlignLeft className="w-4 h-4" />
-                              </button>
+                              <div className="flex gap-1">
+                                <button
+                                  type="button"
+                                  onClick={() => setTextifyTarget({ type: 'custom', key: placeholder })}
+                                  className="retro-button p-1"
+                                  title="Image to Text"
+                                >
+                                  <Type className="w-4 h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleInputChange(placeholder, handleParagraphify(formData[placeholder] || ''))}
+                                  className="retro-button p-1"
+                                  title="Format as single paragraph"
+                                >
+                                  <AlignLeft className="w-4 h-4" />
+                                </button>
+                              </div>
                             )}
                           </div>
                           <div className="mt-1">
@@ -727,7 +776,7 @@ export default function App() {
           </div>
 
           {/* Navigation Buttons */}
-          <div className="pt-6 mt-6 flex items-center justify-between border-t-2 border-retro-border border-dashed">
+          <div className="pt-6 mt-4 shrink-0 flex items-center justify-between border-t-2 border-retro-border border-dashed">
             <button
               onClick={prevStep}
               disabled={currentStep === 1}
@@ -774,6 +823,13 @@ export default function App() {
       {/* Settings Modal */}
       {isSettingsOpen && (
         <SettingsModal onClose={() => setIsSettingsOpen(false)} />
+      )}
+
+      {textifyTarget && (
+        <TextifyModal 
+          onClose={() => setTextifyTarget(null)} 
+          onInsert={handleTextifyInsert} 
+        />
       )}
     </div>
   );
