@@ -226,63 +226,82 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
           slideToPlaceholders.set(filename, Array.from(phs));
         }
 
-        // Extract shape sizes for image placeholders and force center alignment
-        const spRegex = /<p:sp[\s>][\s\S]*?<\/p:sp>/g;
-        let spMatch;
-        while ((spMatch = spRegex.exec(xml)) !== null) {
-          const spXml = spMatch[0];
-          const rawSpText = spXml.replace(/<[^>]+>/g, '');
-          const phRegex = /\{([A-Z]\d{2,3})\}/g;
-          let phMatch;
-          let isImageShape = false;
-          while ((phMatch = phRegex.exec(rawSpText)) !== null) {
-            const ph = phMatch[1];
-            if (ph.startsWith('C')) {
-              isImageShape = true;
-              const extMatch = /<a:ext\s+cx="(\d+)"\s+cy="(\d+)"/.exec(spXml);
-              if (extMatch) {
-                const cx = parseInt(extMatch[1], 10);
-                const cy = parseInt(extMatch[2], 10);
-                shapeSizes[ph] = { width: Math.round(cx / 9525), height: Math.round(cy / 9525) };
+          // Extract shape sizes for image placeholders and apply autofit if requested
+          const spRegex = /<p:sp[\s>][\s\S]*?<\/p:sp>/g;
+          let spMatch;
+          let modifiedSlideXml = xml;
+          while ((spMatch = spRegex.exec(xml)) !== null) {
+            const spXml = spMatch[0];
+            const rawSpText = spXml.replace(/<[^>]+>/g, '');
+            const phRegex = /\{([A-Z]\d{2,3})\}/g;
+            let phMatch;
+            let hasTextPh = false;
+            while ((phMatch = phRegex.exec(rawSpText)) !== null) {
+              const ph = phMatch[1];
+              if (ph.startsWith('A') || ph.startsWith('B') || ph.startsWith('D')) {
+                hasTextPh = true;
+              }
+              if (ph.startsWith('C')) {
+                const extMatch = /<a:ext\s+cx="(\d+)"\s+cy="(\d+)"/.exec(spXml);
+                if (extMatch) {
+                  const cx = parseInt(extMatch[1], 10);
+                  const cy = parseInt(extMatch[2], 10);
+                  shapeSizes[ph] = { width: Math.round(cx / 9525), height: Math.round(cy / 9525) };
+                }
+              }
+            }
+
+            if (hasTextPh && data._skipChunking) {
+              let updatedSpXml = spXml;
+              const normAutofitTag = '<a:normAutofit fontScale="100000" lnSpcReduction="0"/>';
+              
+              // Always ensure wrap="square" and no other autofit type is present
+              if (updatedSpXml.includes('<a:bodyPr')) {
+                // Ensure wrap is not "none"
+                updatedSpXml = updatedSpXml.replace(/wrap="none"/g, 'wrap="square"');
+                
+                // Remove any existing autofit tags to replace with ours
+                updatedSpXml = updatedSpXml.replace(/<a:noAutofit\s*\/?>/g, '');
+                updatedSpXml = updatedSpXml.replace(/<a:spAutoFit\s*\/?>/g, '');
+                updatedSpXml = updatedSpXml.replace(/<a:normAutofit[\s\S]*?\/?>/g, '');
+
+                const bodyPrStart = updatedSpXml.indexOf('<a:bodyPr');
+                const bodyPrTagEnd = updatedSpXml.indexOf('>', bodyPrStart);
+                
+                if (updatedSpXml[bodyPrTagEnd - 1] === '/') {
+                  // handle <a:bodyPr ... />
+                  updatedSpXml = updatedSpXml.substring(0, bodyPrTagEnd - 1) + `>${normAutofitTag}</a:bodyPr>` + updatedSpXml.substring(bodyPrTagEnd + 1);
+                } else {
+                  // handle <a:bodyPr ... >
+                  updatedSpXml = updatedSpXml.substring(0, bodyPrTagEnd + 1) + normAutofitTag + updatedSpXml.substring(bodyPrTagEnd + 1);
+                }
+                modifiedSlideXml = modifiedSlideXml.replace(spXml, updatedSpXml);
               }
             }
           }
           
-          if (isImageShape) {
-            // Force vertical centering (anchor="ctr")
-            let newSpXml = spXml;
-            if (/<a:bodyPr[^>]*anchor="[^"]*"/.test(newSpXml)) {
-              newSpXml = newSpXml.replace(/(<a:bodyPr[^>]*anchor=")[^"]*(")/, '$1ctr$2');
-            } else if (/<a:bodyPr/.test(newSpXml)) {
-              newSpXml = newSpXml.replace(/<a:bodyPr/, '<a:bodyPr anchor="ctr"');
-            }
-            
-            // Force horizontal centering (algn="ctr")
-            if (/<a:pPr[^>]*algn="[^"]*"/.test(newSpXml)) {
-              newSpXml = newSpXml.replace(/(<a:pPr[^>]*algn=")[^"]*(")/g, '$1ctr$2');
-            } else if (/<a:pPr/.test(newSpXml)) {
-              newSpXml = newSpXml.replace(/<a:pPr/g, '<a:pPr algn="ctr"');
-            } else if (/<a:p>/.test(newSpXml)) {
-              newSpXml = newSpXml.replace(/<a:p>/g, '<a:p><a:pPr algn="ctr"/>');
-            }
-            
-            if (newSpXml !== spXml) {
-              xml = xml.replace(spXml, newSpXml);
-            }
+          if (data._skipChunking) {
+            xml = modifiedSlideXml;
+            zip.file(filename, xml);
           }
         }
       }
     }
-  }
-
   // Chunk the data
   const chunkedData: Record<string, string[]> = {};
   for (const [key, value] of Object.entries(data)) {
     if (Array.isArray(value)) {
       chunkedData[key] = value;
     } else if (key.startsWith('B') && typeof value === 'string') {
-      // Text content gets chunked
-      chunkedData[key] = chunkText(value, 130);
+      // Text content gets chunked unless _skipChunking is true
+      if (data._skipChunking) {
+        chunkedData[key] = [value];
+      } else {
+        chunkedData[key] = chunkText(value, 130);
+      }
+    } else if (key.startsWith('D') && typeof value === 'string' && data._skipChunking) {
+      // D prefixes also get treated as single chunks in skip mode
+      chunkedData[key] = [value];
     } else {
       // Titles and images don't get chunked
       chunkedData[key] = [String(value || '')];
@@ -309,6 +328,58 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
     for (let i = 0; i < allSlides.length; i++) {
       const currentSlide = allSlides[i];
       let xml = zip.file(currentSlide)?.asText() || '';
+
+      // Perform manual font sizing for Announcement mode (_skipChunking)
+      if (data._skipChunking) {
+        const spRegex = /<p:sp[\s>][\s\S]*?<\/p:sp>/g;
+        let spMatch;
+        let modifiedXml = xml;
+        
+        while ((spMatch = spRegex.exec(xml)) !== null) {
+          const spXml = spMatch[0];
+          let targetFontSize = 0;
+          
+          // Check if this shape contains any B or D placeholders
+          for (const ph of phs) {
+            if ((ph.startsWith('B') || ph.startsWith('D')) && spXml.includes(ph)) {
+              const textVal = chunkedData[ph]?.[i] || "";
+              const len = textVal.length;
+              let size = 3500;
+              if (len <= 75) size = 6600;
+              else if (len <= 100) size = 6000;
+              else if (len <= 140) size = 5000;
+              else if (len <= 220) size = 4000;
+              
+              // Use the smallest determined size if multiple placeholders exist in one shape
+              // (Usually there's only one B/D placeholder per shape)
+              if (targetFontSize === 0 || size < targetFontSize) {
+                targetFontSize = size;
+              }
+            }
+          }
+
+          if (targetFontSize > 0) {
+            let updatedSpXml = spXml;
+            
+            // Replace existing sz attributes
+            if (updatedSpXml.includes('sz="')) {
+              updatedSpXml = updatedSpXml.replace(/sz="\d+"/g, `sz="${targetFontSize}"`);
+            } else {
+              // Inject sz if missing into a:rPr and a:defRPr
+              updatedSpXml = updatedSpXml.replace(/<a:rPr([^>]*?)(\/?)>/g, (match, attrs, selfClose) => {
+                if (attrs.includes('sz="')) return match;
+                return `<a:rPr${attrs} sz="${targetFontSize}"${selfClose}>`;
+              });
+              updatedSpXml = updatedSpXml.replace(/<a:defRPr([^>]*?)(\/?)>/g, (match, attrs, selfClose) => {
+                if (attrs.includes('sz="')) return match;
+                return `<a:defRPr${attrs} sz="${targetFontSize}"${selfClose}>`;
+              });
+            }
+            modifiedXml = modifiedXml.replace(spXml, updatedSpXml);
+          }
+        }
+        xml = modifiedXml;
+      }
 
       for (const ph of phs) {
         // CRITICAL FIX: PowerPoint often splits {A01} into multiple XML tags like <a:t>{</a:t><a:t>A01</a:t><a:t>}</a:t>
@@ -338,8 +409,8 @@ export async function generateFromTemplate(file: File, data: Record<string, any>
           }
         }
         
-        if (ph.startsWith('C') && !finalVal) {
-          // Remove the shape if it's an image placeholder and the value is empty
+        if ((ph.startsWith('C') || ph.startsWith('B') || ph.startsWith('D')) && !finalVal) {
+          // Remove the shape if it's an image/text placeholder and the value is empty
           xml = removeShapeWithText(xml, newPh);
         } else {
           flatData[`${ph}_${i}`] = finalVal;

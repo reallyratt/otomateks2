@@ -63,6 +63,22 @@ const PLACEHOLDERS_DATA = [
   { part: 'Lagu Komuni 1', codeTitle: '{A019}', codeText: '{B019}', codeImage: '{C019}', id: '(umat duduk) MADAH PUJIAN', jv: '(umat lenggah) KIDUNG IRINGAN KOMUNI', note: '*add plus button to add more lagu komuni' },
   { part: 'Doa Sesudah Komuni', codeTitle: '{A020}', codeText: '{B020}', id: '(umat berdiri) DOA SESUDAH KOMUNI', jv: '(umat jumeneng) SEMBAHYANGAN BAKDA KOMUNI', note: '**add automatically text 1 for both indo jawa' },
   { part: 'Lagu Penutup', codeTitle: '{A021}', codeText: '{B021}', codeImage: '{C021}', id: '(umat berdiri) NYANYIAN PERARAKAN KELUAR', jv: '(umat jumeneng) KIDUNG PANUTUP', note: '*add plus button to add more lagu penutup' },
+  { isHeader: true, title: 'ANNOUNCEMENT PART' },
+  { part: 'Pengumuman', codeTitle: '{A100}', codeText: '{B100}', codeImage: '{C100}', id: 'PENGUMUMAN PAROKI MINGGU INI', jv: 'PAWARTOS PAROKI MINGGU MENIKA', note: '*Add add more button' },
+  { part: 'Kolekte', codeTitle: '{A101}', id: 'KOLEKTE MINGGU LALU', jv: 'KOLEKTE MINGGU KAPENGKER' },
+  { part: 'Kolekte 1', codeTitle: '{B101}', codeText: '{D101}', id: 'KOLEKTE PERTAMA (I)', jv: 'KOLEKTE KAPISAN (I)' },
+  { part: 'Kolekte 2', codeTitle: '{B102}', codeText: '{D102}', id: 'KOLEKTE KEDUA (II)', jv: 'KOLEKTE KAPING KALIH (II)' },
+  { part: 'APBU', codeTitle: '{B103}', codeText: '{D103}', id: 'APBU', jv: 'APBU' },
+  { part: 'Peduli Pendidikan', codeTitle: '{B104}', codeText: '{D104}', id: 'Gerakan Peduli Pendidikan', jv: 'Gerakan Peduli Pendidikan' },
+  { part: 'Persembahan', codeTitle: '{B105}', codeText: '{D105}', id: 'Persembahan', jv: 'Pisungsung', note: 'lalalala belum ada template (BESOK KALAU ADA DI UPDATE)' },
+  { part: 'Kolekte Qris', codeTitle: '{A106}', id: 'PENERIMAAN KOLEKTE MELALUI QRIS', jv: 'PAMEWURING KOLEKTE LUMANTAR QRIS' },
+  { part: 'Kolekte Qris 1', codeTitle: '{B106}', codeText: '{D106}', id: 'KOLEKTE PERTAMA (I)', jv: 'KOLEKTE KAPISAN (I)' },
+  { part: 'Kolekte Qris 2', codeTitle: '{B107}', codeText: '{D107}', id: 'KOLEKTE KEDUA (II)', jv: 'KOLEKTE KAPING KALIH (II)' },
+  { part: 'Perkawinan', codeTitle: '{A108}', codeImage: '{C108}', id: 'PENGUMUMAN PERKAWINAN YANG PERTAMA / KEDUA / KETIGA', jv: 'WARA - WARA PENGANTEN KAPISAN / KEDUA / KETIGA', note: '*Theres a MODE button to switch from Image to Text only\n*Add add more button' },
+  { part: 'Perkawinan (Pria)', codeTitle: '{B108}', codeText: '{D108}', id: 'Mempelai Pria & Lingkungan', jv: 'Mempelai Pria & Lingkungan' },
+  { part: 'Perkawinan (Wanita)', codeTitle: '{B109}', codeText: '{D109}', id: 'Mempelai Wanita & Lingkungan', jv: 'Mempelai Wanita & Lingkungan' },
+  { part: 'Perkawinan Text Mode (Pria)', codeTitle: '{B110}', codeText: '{D110}', id: 'Mempelai Pria & Lingkungan', jv: 'Mempelai Pria & Lingkungan' },
+  { part: 'Perkawinan Text Mode (Wanita)', codeTitle: '{B111}', codeText: '{D111}', id: 'Mempelai Wanita & Lingkungan', jv: 'Mempelai Wanita & Lingkungan' },
 ];
 
 export function SettingsModal({ onClose }: SettingsModalProps) {
@@ -213,40 +229,46 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
               </div>
               <div className="retro-box-inset p-4 space-y-6">
                 <div className="space-y-4">
-                  {PLACEHOLDERS_DATA.map((item, idx) => (
-                    <div key={idx} className="border-b-2 border-retro-border pb-4 last:border-0 last:pb-0">
-                      <div className="font-bold text-lg mb-2">{item.part}</div>
-                      <div className="grid grid-cols-[100px_1fr] gap-2 text-sm">
-                        <div className="font-bold text-retro-muted">Title:</div>
-                        <div>
-                          <span className="bg-retro-box-dark px-1.5 py-0.5 rounded mr-2 font-mono text-xs">{item.codeTitle}</span>
-                          {placeholderLang === 'id' ? item.id : item.jv}
+                  {PLACEHOLDERS_DATA.map((item: any, idx) => (
+                    item.isHeader ? (
+                      <div key={idx} className="bg-retro-box-dark p-2 text-center font-bold uppercase tracking-widest text-xs border-y-2 border-retro-border my-4">
+                        {item.title}
+                      </div>
+                    ) : (
+                      <div key={idx} className="border-b-2 border-retro-border pb-4 last:border-0 last:pb-0">
+                        <div className="font-bold text-lg mb-2">{item.part}</div>
+                        <div className="grid grid-cols-[100px_1fr] gap-2 text-sm">
+                          <div className="font-bold text-retro-muted">Title:</div>
+                          <div>
+                            <span className="bg-retro-box-dark px-1.5 py-0.5 rounded mr-2 font-mono text-xs">{item.codeTitle}</span>
+                            {placeholderLang === 'id' ? item.id : item.jv}
+                          </div>
+                          
+                          {item.codeText && (
+                            <>
+                              <div className="font-bold text-retro-muted">Text:</div>
+                              <div>
+                                <span className="bg-retro-box-dark px-1.5 py-0.5 rounded font-mono text-xs">{item.codeText}</span>
+                              </div>
+                            </>
+                          )}
+                          
+                          {item.codeImage && (
+                            <>
+                              <div className="font-bold text-retro-muted">Image:</div>
+                              <div>
+                                <span className="bg-retro-box-dark px-1.5 py-0.5 rounded font-mono text-xs">{item.codeImage}</span>
+                              </div>
+                            </>
+                          )}
                         </div>
-                        
-                        {item.codeText && (
-                          <>
-                            <div className="font-bold text-retro-muted">Text:</div>
-                            <div>
-                              <span className="bg-retro-box-dark px-1.5 py-0.5 rounded font-mono text-xs">{item.codeText}</span>
-                            </div>
-                          </>
-                        )}
-                        
-                        {item.codeImage && (
-                          <>
-                            <div className="font-bold text-retro-muted">Image:</div>
-                            <div>
-                              <span className="bg-retro-box-dark px-1.5 py-0.5 rounded font-mono text-xs">{item.codeImage}</span>
-                            </div>
-                          </>
+                        {item.note && (
+                          <div className="mt-2 text-xs text-retro-accent italic whitespace-pre-wrap">
+                            {item.note}
+                          </div>
                         )}
                       </div>
-                      {item.note && (
-                        <div className="mt-2 text-xs text-retro-accent italic">
-                          {item.note}
-                        </div>
-                      )}
-                    </div>
+                    )
                   ))}
                 </div>
                 
